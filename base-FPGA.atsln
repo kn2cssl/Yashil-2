@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Atmel Studio Solution File, Format Version 11.00
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "base-FPGA", "base-FPGA\base-FPGA.cproj", "{D1158C20-F00B-4126-93D1-0763DB1B140C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|AVR = Debug|AVR
+		Release|AVR = Release|AVR
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D1158C20-F00B-4126-93D1-0763DB1B140C}.Debug|AVR.ActiveCfg = Debug|AVR
+		{D1158C20-F00B-4126-93D1-0763DB1B140C}.Debug|AVR.Build.0 = Debug|AVR
+		{D1158C20-F00B-4126-93D1-0763DB1B140C}.Release|AVR.ActiveCfg = Release|AVR
+		{D1158C20-F00B-4126-93D1-0763DB1B140C}.Release|AVR.Build.0 = Release|AVR
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
