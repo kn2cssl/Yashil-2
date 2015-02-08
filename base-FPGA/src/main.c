@@ -37,10 +37,10 @@ unsigned char Buf_Rx_L[_Buffer_Size] ;
 char Buf_Tx_L[_Buffer_Size];
 char Address[_Address_Width] = { 0x11, 0x22, 0x33, 0x44, 0x55};
 int motor_num=0,test=0;
-uint32_t kck_time_dir,kck_time_chip;
+uint32_t kck_time;
 int free_wheel=0;
 int adc =0;
-int flg_dir=0, flg_chip=0;
+int flg=0;
 
 char ctrlflg=0,full_charge=0;;
 uint64_t flag2sec=0;
@@ -57,7 +57,6 @@ int main (void)
 	PORT_init();
 	TimerD0_init();
 	TimerC0_init();
-	TimerC1_init();
 	TimerE1_init();
 	USARTE0_init();
 	ADCA_init();
@@ -96,6 +95,10 @@ int main (void)
 	/////////////////////////////////////////////////////////////////////////////////////////////END   NRF Initialize
 	while(1)
 	  {  
+		  //if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
+		  //{
+			  //LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		  //}
 		   // BUZZER
 		    adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
 		   //adc = 1200;
@@ -110,38 +113,34 @@ int main (void)
 			
 			//SHOOT
 			PORTC_OUTCLR=KCK_SH_PIN_bm;
+			//tc_enable_cc_channels(&TCC0,TC_CCDEN);
 			if((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp)
 			{
 				full_charge=1;
-				tc_disable_cc_channels(&TCC0,TC_CCCEN);
+				tc_disable_cc_channels(&TCC0,TC_CCDEN);
 				//LED_White_PORT.OUTTGL = LED_White_PIN_bm;
 			}
-			else // if(((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp==0)) 
+			else
 			{
-				if((flg_dir==0))
-					{
-					tc_enable_cc_channels(&TCC0,TC_CCCEN);
-					}
+				if(flg==0)
+				{
+					tc_enable_cc_channels(&TCC0,TC_CCDEN);
+				}
 			}
 			if (full_charge)
 			{
 				if (Robot_D[RobotID].KCK )
 				{
-					flg_dir = 1;
-				}
-				if (Robot_D[RobotID].CHP )
-				{
-					flg_chip = 1;
+					flg = 1;
 				}
 			}
 			if (KCK_DSH_SW)//bazi vaghta begir nagir dare
 			{
-				//flg_chip = 1;
-				flg_dir = 1;
+				flg = 1;
 				//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			}
 			
-		    ////motor test
+		   // //motor test
 		   //switch(flag2sec)
 			  //{ case 200:
 			   //// M.Setpoint=1000;
@@ -235,14 +234,14 @@ int main (void)
 			   //break;
 	  //
 			   //}
-		  //Robot_D[RobotID].M0b  = 0xE8;//0X18;//-1000//01;//low37121
-		  //Robot_D[RobotID].M0a  = 0xFF;//0XFC;//high
-		  //Robot_D[RobotID].M1b  = 0X22;//2000//ghalat17325
-		  //Robot_D[RobotID].M1a  = 0X33;
-		  //Robot_D[RobotID].M2b  = 0X44;//1000//low13703
-		  //Robot_D[RobotID].M2a  = 0X55;//high
-		  //Robot_D[RobotID].M3b  = 0x66;//3000//32;//ghalat30258
-		  //Robot_D[RobotID].M3a  = 0X77;//76;
+		 // Robot_D[RobotID].M0b  = 0x00;//0X18;//-1000//01;//low37121
+		 // Robot_D[RobotID].M0a  = 0xFF;//0XFC;//high
+		  //Robot_D[RobotID].M1b  = 0XE8;//2000//ghalat17325
+		  //Robot_D[RobotID].M1a  = 0X03;
+		  //Robot_D[RobotID].M2b  = 0XE8;//1000//low13703
+		  //Robot_D[RobotID].M2a  = 0X03;//high
+		  //Robot_D[RobotID].M3b  = 0xB8;//3000//32;//ghalat30258
+		  //Robot_D[RobotID].M3a  = 0X0B;//76;
 		  
 		  //LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 		 // (Robot_D[RobotID].M0a == 1) && (Robot_D[RobotID].M0b == 2) && (Robot_D[RobotID].M1a==3) && (Robot_D[RobotID].M1b == 4) ||
@@ -276,7 +275,7 @@ int main (void)
 			
 			////SEND TEST DATA TO FT232
 			//char str1[20];
-		    //uint8_t count1 = sprintf(str1,"%d,%d,%d,%d\r",FPGA_DATA_PORT.IN,MOTORNUM_PORT.IN,((PARITY_PORT.IN & PARITY_bm)>>PARITY_bp),((CLK_par_PORT.IN & CLK_par_bm)>>CLK_par_bp));
+		    //uint8_t count1 = sprintf(str1,"%d\r",adc);
 			//
 			//for (uint8_t i=0;i<count1;i++)
 			//{
@@ -284,6 +283,7 @@ int main (void)
 				//
 			//}
 			//usart_putchar(&USARTE0,'a');
+			
 	  }
 }
 
@@ -342,32 +342,34 @@ ISR(TCE1_OVF_vect)//1ms
 		ctrlflg=1;
 		timectrl=0;
 	}
-	time2sec++;
-	if (time2sec>=10)
-	{
-		flag2sec++;
-		time2sec=0;
-	}
-	if(flg_dir)
+	//time2sec++;
+	//if (time2sec>=10)
+	//{
+		//flag2sec++;
+		//time2sec=0;
+	//}
+	if(flg)
 	{    
-		if(kck_time_dir<100)
+		if(kck_time<2000)
 		{
-			kck_time_dir++;
-			tc_disable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
+			kck_time++;
+			tc_disable_cc_channels(&TCC0,TC_CCDEN);
 			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
-				tc_disable_cc_channels(&TCC0,TC_CCDEN);
+			//if(KCK_DCh_Limit) // chera moshkel dare?!
+				tc_disable_cc_channels(&TCC0,TC_CCCEN);
+				
+				
 			else
 			{
 				if(KCK_DSH_SW)
 				{
-					tc_enable_cc_channels(&TCC0,TC_CCDEN);
+					tc_enable_cc_channels(&TCC0,TC_CCCEN);
 					KCK_Speed_DIR(KCK_SPEED_HI);
 					full_charge=0;
 				}
 				else if(full_charge==1)
 				{
-					tc_enable_cc_channels(&TCC0,TC_CCDEN);
+					tc_enable_cc_channels(&TCC0,TC_CCCEN);
 					KCK_Speed_DIR(Robot_D[RobotID].KCK);
 					full_charge=0;
 				}
@@ -376,45 +378,10 @@ ISR(TCE1_OVF_vect)//1ms
 		
 		else {
 			KCK_Speed_DIR(KCK_SPEED_OFF);
-			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-			kck_time_dir=0; flg_dir=0;}
+			tc_enable_cc_channels(&TCC0,TC_CCDEN);
+			
+		kck_time=0; flg=0;}
 	}
-	//if(flg_chip)
-	//{
-		//if(kck_time_chip<100)
-		//{
-			//kck_time_chip++;
-			//tc_disable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
-			//if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
-			//{tc_disable_cc_channels(&TCC1,TC_CCAEN);
-				//tc_disable(&TCC1);}
-			//else
-			//{
-				//if(KCK_DSH_SW)
-				//{
-					//tc_enable(&TCC1);
-					//tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					//KCK_Speed_CHIP(KCK_SPEED_HI);
-					//full_charge=0;
-				//}
-				//else if(full_charge==1)
-				//{
-					//tc_enable(&TCC1);
-					//tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					//KCK_Speed_CHIP(Robot_D[RobotID].KCK);
-					//full_charge=0;
-				//}
-			//}
-		//}
-		//
-		//else {
-			//KCK_Speed_CHIP(KCK_SPEED_OFF);
-			//tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-		//kck_time_chip=0; flg_chip=0;}
-	//}
 }
 //
 //ISR(USARTE0_RXC_vect)       
@@ -433,12 +400,11 @@ ISR(TCD0_CCA_vect)
 {   
 	switch (motor_num)
 	{
-		
 		case 0 :
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			if((CLK_par_PORT.IN && CLK_par_bm)==1)
 			{
-			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0b;//low byte
+			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0b;
 			PARITY_PORT.OUTCLR = PARITY_bm;
 			motor_num++;
 			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
@@ -451,7 +417,7 @@ ISR(TCD0_CCA_vect)
 		break;
 		case 2 :
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			if((CLK_par_PORT.IN && CLK_par_bm)==1)
 			{
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0a;
 			PARITY_PORT.OUTSET = PARITY_bm;
@@ -466,8 +432,9 @@ ISR(TCD0_CCA_vect)
 			break;
 		case 4 :
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			if((CLK_par_PORT.IN && CLK_par_bm)==1)
 			{
+			
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1b;
 			PARITY_PORT.OUTCLR = PARITY_bm;
 			motor_num++;
@@ -481,8 +448,9 @@ ISR(TCD0_CCA_vect)
 		    break;
 		case 6 :
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			if((CLK_par_PORT.IN && CLK_par_bm)==1)
 			{
+			//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1a;
 			PARITY_PORT.OUTSET = PARITY_bm;
 			motor_num++;
@@ -496,7 +464,7 @@ ISR(TCD0_CCA_vect)
 		    break;
 		case 8 :
 			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			if((CLK_par_PORT.IN && CLK_par_bm)==1)
 			{
 				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2b;
 				PARITY_PORT.OUTCLR = PARITY_bm;
@@ -511,7 +479,7 @@ ISR(TCD0_CCA_vect)
 			break;
 		case 10 :
 			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			if((CLK_par_PORT.IN && CLK_par_bm)==1)
 			{
 				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2a;
 				PARITY_PORT.OUTSET = PARITY_bm;
@@ -526,7 +494,7 @@ ISR(TCD0_CCA_vect)
 			break;
 		case 12 :
 			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			if((CLK_par_PORT.IN && CLK_par_bm)==1)
 			{
 				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3b;
 				PARITY_PORT.OUTCLR = PARITY_bm;
@@ -541,7 +509,7 @@ ISR(TCD0_CCA_vect)
 			break;
 		case 14 :
 			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			if((CLK_par_PORT.IN && CLK_par_bm)==1)
 			{
 				//LED_White_PORT.OUTTGL = LED_White_PIN_bm;
 				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3a;
@@ -556,9 +524,9 @@ ISR(TCD0_CCA_vect)
 			}
 			break;
 		}
-	  ////motor_num++;
-	  ////if (motor_num>=16)
-	  ////motor_num=0;
+	  //motor_num++;
+	  //if (motor_num>=16)
+	  //motor_num=0;
 	}
 //ISR(TCD0_CCA_vect)
 //{    

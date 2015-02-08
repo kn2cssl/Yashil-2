@@ -1,6 +1,8 @@
 /*
  * initialize.h
  *
+ * Created: 3/22/2012 12:50:44 AM
+ *  Author: Milad
  */ 
 
 
@@ -13,13 +15,13 @@
 #define ON 1
 #define OFF 0
 //ID1 ID0 ID3 ID2
-#define RobotID ((((PORTB_IN & PIN5_bm) >> PIN5_bp) << 0)|(((PORTA_IN & PIN7_bm) >> PIN7_bp) << 1)|(((PORTB_IN & PIN6_bm) >> PIN6_bp) << 2)|(((PORTB_IN & PIN4_bm) >> PIN4_bp) << 3))     
+#define RobotID ((((PORTB_IN & PIN5_bm) >> PIN5_bp) << 0)|(((PORTB_IN & PIN3_bm) >> PIN3_bp) << 1)|(((PORTB_IN & PIN6_bm) >> PIN6_bp) << 2)|(((PORTB_IN & PIN4_bm) >> PIN4_bp) << 3))     
 //FPGA DATA
-#define CLK_par_bm PIN1_bm 
-#define CLK_par_bp PIN1_bp 
+#define CLK_par_bm PIN0_bm 
+#define CLK_par_bp PIN0_bp 
 #define CLK_par_PORT PORTA
-#define PARITY_bm PIN2_bm
-#define PARITY_bp PIN2_bp
+#define PARITY_bm PIN1_bm
+#define PARITY_bp PIN1_bp
 #define PARITY_PORT  PORTA 
 #define FPGA_DATA0_bm	PIN0_bm	
 #define FPGA_DATA1_bm	PIN1_bm	
@@ -33,29 +35,32 @@
 #define MOTORNUM0_bm	PIN0_bm	
 #define MOTORNUM1_bm	PIN1_bm	 
 #define MOTORNUM_PORT   PORTR
-//FPGA SPI//////////	PORTE
+//FPGA SPI
 #define MOSI_CUR1_bm PIN5_bm
 #define MISO_CUR1_bm PIN6_bm
 #define SCK_CUR1_bm  PIN7_bm
+#define MOSI_CUR2_bm PIN5_bm
+//#define MISO_CUR2_bm PIN6_bm
+#define SCK_CUR2_bm  PIN7_bm
 //IR
 #define KCK_Sens_PORT PORTD
 #define KCK_Sens_PIN_bm		PIN1_bm
 #define KCK_Sens_PIN_bp		PIN1_bp
 #define KCK_Sens (((KCK_Sens_PORT.IN &KCK_Sens_PIN_bm) >> KCK_Sens_PIN_bp)?0x00:0xFF)
 //SW_cap
-#define KCK_DSH_SW_PORT PORTD
-#define KCK_DSH_SW_PIN_bm	PIN0_bm
-#define KCK_DSH_SW_PIN_bp	PIN0_bp
+#define KCK_DSH_SW_PORT PORTA
+#define KCK_DSH_SW_PIN_bm	PIN2_bm
+#define KCK_DSH_SW_PIN_bp	PIN2_bp
 #define KCK_DSH_SW (((KCK_DSH_SW_PORT.IN & KCK_DSH_SW_PIN_bm) >> KCK_DSH_SW_PIN_bp)?0xFF:0x00)
 
 #define KCK_Ch_Limit_PORT PORTC
-#define KCK_Ch_Limit_PIN_bm		PIN6_bm
-#define KCK_Ch_Limit_PIN_bp		PIN6_bp
+#define KCK_Ch_Limit_PIN_bm		PIN4_bm
+#define KCK_Ch_Limit_PIN_bp		PIN4_bp
 
 #define KCK_DCh_Limit_PORT PORTC
-#define KCK_DCh_Limit_PIN_bm		PIN5_bm
-#define KCK_DCh_Limit_PIN_bp		PIN5_bp
-//#define KCK_DCh_Limit (((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm) >> KCK_Ch_Limit_PIN_bp)?0xFF:0x00)
+#define KCK_DCh_Limit_PIN_bm		PIN6_bm
+#define KCK_DCh_Limit_PIN_bp		PIN6_bp
+#define KCK_DCh_Limit (((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm) >> KCK_Ch_Limit_PIN_bp)?0xFF:0x00)
 //ST_SHG
 //#define KCK_Charge_PORT PORTC
 //#define KCK_Charge_PIN_bm		PIN4_bm
@@ -69,19 +74,18 @@
 #define KCK_SPEED_LOW 0x64
 #define KCK_SPEED_HI  0xFF
 #define KCK_SPEED_RX Robot_D[RobotID].KCK
-#define KCK_Speed_CHIP(_A_) TCC1_CCA=_A_; // PORTC_OUT =(PORTC_OUT & (~KCK_DIR_PIN_bm)) | (_A_<<KCK_DIR_PIN_bp) // _delay_ms(100); TCC0_CCA=0; //KCK_Charge( KCK_CHARGE_ON) KCK_Charge( KCK_CHARGE_OFF) //PORTC_OUT =TCC0_CNT=_A_; ;
-#define KCK_Speed_DIR(_A_)  TCC0_CCD=_A_;
+//#define KCK_Speed_CHIP(_A_) TCC0_CCC=_A_; // PORTC_OUT =(PORTC_OUT & (~KCK_DIR_PIN_bm)) | (_A_<<KCK_DIR_PIN_bp) // _delay_ms(100); TCC0_CCA=0; //KCK_Charge( KCK_CHARGE_ON) KCK_Charge( KCK_CHARGE_OFF) //PORTC_OUT =TCC0_CNT=_A_; ;
+#define KCK_Speed_DIR(_A_) TCC0_CCC=_A_;
 
-#define KCK_Chip_PIN_bm		PIN4_bm 
-#define KCK_Chip_PIN_bp		PIN4_bp
-#define KCK_DIR_PIN_bm		PIN3_bm
-#define KCK_DIR_PIN_bp		PIN3_bp
-#define KCK_SH_PIN_bm		PIN2_bm
-#define KCK_SH_PIN_bp		PIN2_bp
-
-////Vback???
-//#define KCK_CAP_VFB_PIN_bm	PIN6_bm 
-//#define KCK_CAP_VFB_PIN_bp	PIN6_bp  //portesh chi??
+//#define KCK_Chip_PIN_bm		PIN2_bm //socket shoot 4pin --> chip nadare
+//#define KCK_Chip_PIN_bp		PIN2_bp
+#define KCK_SH_PIN_bm		PIN3_bm
+#define KCK_SH_PIN_bp		PIN3_bp
+#define KCK_DIR_PIN_bm		PIN2_bm
+#define KCK_DIR_PIN_bp		PIN2_bp
+//Vback
+#define KCK_CAP_VFB_PIN_bm	PIN6_bm 
+#define KCK_CAP_VFB_PIN_bp	PIN6_bp  //portesh chi??
 
 //Gyroscope 
 #define Gyro_SDA_PIN_bm			PIN0_bm //PORTC 
@@ -90,7 +94,6 @@
 // BUZZER
 #define Buzzer_PIN_bm		PIN4_bm
 #define Buzzer_PIN_bp		PIN4_bp
-#define Buzzer_PORT			PORTE
 #define Buzzer(_STATUS_)    PORTE_OUT = (PORTE_OUT & ~PIN4_bm) | (_STATUS_<<PIN4_bp)
 
 //LED DONE
@@ -107,16 +110,16 @@
 #define LED_Red_PORT		PORTE
 #define LED_White_PORT      PORTE
 #define LED_Green_PORT      PORTE
-
+#define Buzzer_PORT			PORTE
 
 //USART
 #define TX_Data_PIN_bm		PIN3_bm
 #define RX_Data_PIN_bm		PIN2_bm
 
 //TEST BUTTON 
-#define SW_TEST_PIN_bm		PIN7_bm
-#define SW_TEST_PIN_bp		PIN7_bp
-#define SW_TEST (((PORTC_IN &SW_TEST_PIN_bm) >>SW_TEST_PIN_bp )?0xFF:0x00)
+#define SW_TEST_PIN_bm		PIN0_bm
+#define SW_TEST_PIN_bp		PIN0_bp
+#define SW_TEST (((PORTD_IN &SW_TEST_PIN_bm) >>SW_TEST_PIN_bp )?0xFF:0x00)
 
 //WIRELESS
 #define NRF24L01_L_SPI			SPID
@@ -144,7 +147,6 @@ void PORT_init(void);
 //#define TIMERD0_PER 0x7D
 void TimerD0_init(void);//timer 0.063ms
 void TimerC0_init(void);//pwm?!?
-void TimerC1_init(void);
 void TimerE1_init(void);
 
 void ADCA_init(void);

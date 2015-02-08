@@ -27,7 +27,7 @@ void PORT_init(void)
 {   
 	PORTA_DIRSET = CLK_par_bm | PARITY_bm; 
 	//PORTB.7 SOOKHTE!
-	PORTC_DIRSET =  KCK_DIR_PIN_bm | KCK_SH_PIN_bm | Gyro_SCL_PIN_bm | KCK_Chip_PIN_bm ;
+	PORTC_DIRSET =  KCK_DIR_PIN_bm | KCK_SH_PIN_bm | MOSI_CUR2_bm | SCK_CUR2_bm | Gyro_SCL_PIN_bm ;//KCK_Chip_PIN_bm |
 			//PORTC_PIN0CTRL |= PORT_ISC_LEVEL_gc;  //vase chie??
 			//PORTC_INTCTRL |= PORT_INT0LVL_LO_gc;
 			//PORTC_INT0MASK |= PIN0_bm;
@@ -37,13 +37,12 @@ void PORT_init(void)
 	PORTD_INTCTRL = PORT_INT0LVL_LO_gc;
 	PORTD_INT0MASK = PIN2_bm;
 	
-	PORTE_DIRSET = SCK_CUR1_bm | MOSI_CUR1_bm | Buzzer_PIN_bm | TX_Data_PIN_bm | LED_Green_PIN_bm | LED_White_PIN_bm | LED_Red_PIN_bm;
+	PORTE_DIRSET = SCK_CUR1_bm | MOSI_CUR1_bm | Buzzer_PIN_bm | PIN3_bm | LED_Green_PIN_bm | LED_White_PIN_bm | LED_Red_PIN_bm;
 	//PORTE.OUTSET = PIN3_bm;//TX pin on PORTE
 	
 	PORTF_DIRSET = FPGA_DATA0_bm | FPGA_DATA1_bm | FPGA_DATA2_bm | FPGA_DATA3_bm | FPGA_DATA4_bm | FPGA_DATA5_bm | FPGA_DATA6_bm | FPGA_DATA7_bm; 
-	//PORTF_OUTSET = FPGA_DATA0_bm | FPGA_DATA1_bm | FPGA_DATA2_bm | FPGA_DATA3_bm | FPGA_DATA4_bm | FPGA_DATA5_bm | FPGA_DATA6_bm | FPGA_DATA7_bm;
 	PORTR_DIRSET = MOTORNUM0_bm | MOTORNUM1_bm;
-	//PORTR_OUTSET = MOTORNUM0_bm | MOTORNUM1_bm;
+	
 };
 
 #define TIMERD0_PER 0xE0
@@ -54,13 +53,13 @@ void TimerD0_init(void)
 	tc_set_overflow_interrupt_level(&TCD0,TC_INT_LVL_LO);
 	tc_set_cca_interrupt_level(&TCD0,TC_INT_LVL_LO);
 	tc_write_period(&TCD0,TIMERD0_PER);
-	tc_write_cc(&TCC0, TC_CCA, 0x05);//05
+	tc_write_cc(&TCC0, TC_CCA, 0x05);
 	tc_set_direction(&TCD0,TC_UP);
 	//tc_enable_cc_channels(&TCD0,TC_CCAEN);
 	tc_enable(&TCD0);
 };
 
-void TimerC0_init(void)// KICK_CHIP -> OC1A //KICK_DIR -> OC0D(PORTC3) //SHG_PULSE -> OC0C(PORTC2)
+void TimerC0_init(void)
 {
     tc_write_clock_source(&TCC0,TC_CLKSEL_DIV64_gc);//1
     tc_set_wgm(&TCC0,TC_WG_SS);
@@ -69,37 +68,27 @@ void TimerC0_init(void)// KICK_CHIP -> OC1A //KICK_DIR -> OC0D(PORTC3) //SHG_PUL
     tc_enable_cc_channels(&TCC0,TC_CCCEN);
     tc_enable_cc_channels(&TCC0,TC_CCDEN);
     tc_enable(&TCC0);
-	tc_write_cc(&TCC0,TC_CCC,0x5D);
+    tc_write_cc(&TCC0,TC_CCD,0x5D);
 };
-void TimerC1_init(void)
-{
-	tc_write_clock_source(&TCC1,TC_CLKSEL_DIV64_gc);//1
-	tc_set_wgm(&TCC1,TC_WG_SS);
-	tc_write_period(&TCC1,0x77);
-	tc_set_direction(&TCC1,TC_UP);
-	tc_enable_cc_channels(&TCC1,TC_CCAEN);
-	tc_enable(&TCC1);
-	//tc_write_cc(&TCC1,TC_CCA,0x5D);
-}
 #define TIMERE1_PER 0x7C // per=0xD7,DIV256 => 1.728ms  // per=0x7c,DIV256 => 1ms
 void TimerE1_init(void)
 {
-    tc_write_clock_source(&TCE1,TC_CLKSEL_DIV256_gc);
-    tc_set_wgm(&TCE1,TC_WG_NORMAL);
-    tc_set_overflow_interrupt_level(&TCE1,TC_INT_LVL_MED);
-    tc_write_period(&TCE1,TIMERE1_PER);
-    tc_set_direction(&TCE1,TC_UP);
-    tc_enable(&TCE1);
+   tc_write_clock_source(&TCE1,TC_CLKSEL_DIV256_gc);
+   tc_set_wgm(&TCE1,TC_WG_NORMAL);
+   tc_set_overflow_interrupt_level(&TCE1,TC_INT_LVL_MED);
+   tc_write_period(&TCE1,TIMERE1_PER);
+   tc_set_direction(&TCE1,TC_UP);
+   tc_enable(&TCE1);
 };
 void TimerE0_init(void)
 {
 	tc_write_clock_source(&TCE0,TC_CLKSEL_DIV256_gc);
 	tc_set_wgm(&TCE0,TC_WG_SS);
 	tc_write_period(&TCE0,0x00FF);
-	tc_set_direction(&TCE0,TC_UP);
+	tc_set_direction(&TCC0,TC_UP);
 	tc_enable_cc_channels(&TCE0,TC_CCCEN);
 	tc_enable_cc_channels(&TCE0,TC_CCDEN);
-	tc_enable(&TCE0);
+	tc_enable(&TCC0);
 };
 void SPI_Init(void)
 {
