@@ -138,6 +138,7 @@ int main (void)
 			{
 				//flg_chip = 1;
 				flg_dir = 1;
+				//tc_disable_cc_channels(&TCC1,TC_CCAEN);
 				//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			}
 			
