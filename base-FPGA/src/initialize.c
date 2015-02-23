@@ -60,7 +60,7 @@ void TimerD0_init(void)
 	tc_enable(&TCD0);
 };
 
-void TimerC0_init(void)// KICK_CHIP -> OC1A //KICK_DIR -> OC0D(PORTC3) //SHG_PULSE -> OC0C(PORTC2)
+void TimerC0_init(void) //KICK_DIR -> OC0D(PORTC3) //SHG_PULSE -> OC0C(PORTC2)
 {
     tc_write_clock_source(&TCC0,TC_CLKSEL_DIV64_gc);//1
     tc_set_wgm(&TCC0,TC_WG_SS);
@@ -71,7 +71,7 @@ void TimerC0_init(void)// KICK_CHIP -> OC1A //KICK_DIR -> OC0D(PORTC3) //SHG_PUL
     tc_enable(&TCC0);
 	tc_write_cc(&TCC0,TC_CCC,0x5D);
 };
-void TimerC1_init(void)
+void TimerC1_init(void) // KICK_CHIP -> OC1A (PORTC4)
 {
 	tc_write_clock_source(&TCC1,TC_CLKSEL_DIV64_gc);//1
 	tc_set_wgm(&TCC1,TC_WG_SS);
