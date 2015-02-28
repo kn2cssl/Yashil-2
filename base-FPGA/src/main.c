@@ -236,100 +236,100 @@ int main (void)
 			   //break;
 	  //
 			   //}
-			    switch(time2sec)//flag2sec
-			    {   case 10:
-				    // M.Setpoint=1000;
-				    Robot_D[RobotID].M0b  = 0xE8;//low
-				    Robot_D[RobotID].M0a  = 0X03;//high
-				    break;
-				    
-				    case 20:
-				    //M.Setpoint=2000;
-				    Robot_D[RobotID].M0b  = 0xD0;//low
-				    Robot_D[RobotID].M0a  = 0X07;//high
-				    break;
-				    
-				    case 30:
-				    //M.Setpoint=500;
-				    Robot_D[RobotID].M0b  = 0xF4;//low
-				    Robot_D[RobotID].M0a  = 0X01;//high
-				    break;
-				    
-				    case 40:
-				    //M.Setpoint=4000;
-				    Robot_D[RobotID].M0b  = 0xA0;//low
-				    Robot_D[RobotID].M0a  = 0X0F;//high
-				    break;
-				    
-				    case 50:
-				    //M.Setpoint=1000;
-				    Robot_D[RobotID].M0b  = 0xE8;//low
-				    Robot_D[RobotID].M0a  = 0X03;//high
-				    break;
-				    
-				    case 60:
-				    //M.Setpoint=500;
-				    Robot_D[RobotID].M0b  = 0xF4;//low
-				    Robot_D[RobotID].M0a  = 0X01;//high
-				    break;
-				    
-				    case 70:
-				    //M.Setpoint=-500;
-				    Robot_D[RobotID].M0b  = 0x0C;//low
-				    Robot_D[RobotID].M0a  = 0XFE;//high
-				    break;
-				    
-				    case 80:
-				    //M.Setpoint=400;
-				    Robot_D[RobotID].M0b  = 0x90;//low
-				    Robot_D[RobotID].M0a  = 0X01;//high
-				    break;
-				    
-				    case 90:
-				    //M.Setpoint=350;
-				    Robot_D[RobotID].M0b  = 0x5E;//low
-				    Robot_D[RobotID].M0a  = 0X01;//high
-				    break;
-				    
-				    case 100:
-				    //M.Setpoint=340;
-				    Robot_D[RobotID].M0b  = 0x54;//low
-				    Robot_D[RobotID].M0a  = 0X01;//high
-				    break;
-				    
-				    case 110:
-				    //M.Setpoint=330;
-				    Robot_D[RobotID].M0b  = 0x4A;//low
-				    Robot_D[RobotID].M0a  = 0X01;//high
-				    break;
-				    
-				    case 120:
-				    //M.Setpoint=100;
-				    Robot_D[RobotID].M0b  = 0x64;//low
-				    Robot_D[RobotID].M0a  = 0X00;//high
-				    break;
-				    
-				    case 130:
-				    //M.Setpoint=50;
-				    Robot_D[RobotID].M0b  = 0x32;//low
-				    Robot_D[RobotID].M0a  = 0X00;//high
-				    break;
-				    
-				    case 140:
-				    //M.Setpoint=1000;
-				    Robot_D[RobotID].M0b  = 0xE8;//low
-				    Robot_D[RobotID].M0a  = 0X03;//high
-				    break;
-				    
-				    case 150:
-				    //M.Setpoint=-50;
-				    Robot_D[RobotID].M0b  = 0xCE;//low
-				    Robot_D[RobotID].M0a  = 0XFF;//high
-				    //flag2sec=0;
-				     time2sec=0;
-				    break;
-				    
-			    }
+			    //switch(time2sec)//flag2sec
+			    //{   case 10:
+				    //// M.Setpoint=1000;
+				    //Robot_D[RobotID].M0b  = 0xE8;//low
+				    //Robot_D[RobotID].M0a  = 0X03;//high
+				    //break;
+				    //
+				    //case 20:
+				    ////M.Setpoint=2000;
+				    //Robot_D[RobotID].M0b  = 0xD0;//low
+				    //Robot_D[RobotID].M0a  = 0X07;//high
+				    //break;
+				    //
+				    //case 30:
+				    ////M.Setpoint=500;
+				    //Robot_D[RobotID].M0b  = 0xF4;//low
+				    //Robot_D[RobotID].M0a  = 0X01;//high
+				    //break;
+				    //
+				    //case 40:
+				    ////M.Setpoint=4000;
+				    //Robot_D[RobotID].M0b  = 0xA0;//low
+				    //Robot_D[RobotID].M0a  = 0X0F;//high
+				    //break;
+				    //
+				    //case 50:
+				    ////M.Setpoint=1000;
+				    //Robot_D[RobotID].M0b  = 0xE8;//low
+				    //Robot_D[RobotID].M0a  = 0X03;//high
+				    //break;
+				    //
+				    //case 60:
+				    ////M.Setpoint=500;
+				    //Robot_D[RobotID].M0b  = 0xF4;//low
+				    //Robot_D[RobotID].M0a  = 0X01;//high
+				    //break;
+				    //
+				    //case 70:
+				    ////M.Setpoint=-500;
+				    //Robot_D[RobotID].M0b  = 0x0C;//low
+				    //Robot_D[RobotID].M0a  = 0XFE;//high
+				    //break;
+				    //
+				    //case 80:
+				    ////M.Setpoint=400;
+				    //Robot_D[RobotID].M0b  = 0x90;//low
+				    //Robot_D[RobotID].M0a  = 0X01;//high
+				    //break;
+				    //
+				    //case 90:
+				    ////M.Setpoint=350;
+				    //Robot_D[RobotID].M0b  = 0x5E;//low
+				    //Robot_D[RobotID].M0a  = 0X01;//high
+				    //break;
+				    //
+				    //case 100:
+				    ////M.Setpoint=340;
+				    //Robot_D[RobotID].M0b  = 0x54;//low
+				    //Robot_D[RobotID].M0a  = 0X01;//high
+				    //break;
+				    //
+				    //case 110:
+				    ////M.Setpoint=330;
+				    //Robot_D[RobotID].M0b  = 0x4A;//low
+				    //Robot_D[RobotID].M0a  = 0X01;//high
+				    //break;
+				    //
+				    //case 120:
+				    ////M.Setpoint=100;
+				    //Robot_D[RobotID].M0b  = 0x64;//low
+				    //Robot_D[RobotID].M0a  = 0X00;//high
+				    //break;
+				    //
+				    //case 130:
+				    ////M.Setpoint=50;
+				    //Robot_D[RobotID].M0b  = 0x32;//low
+				    //Robot_D[RobotID].M0a  = 0X00;//high
+				    //break;
+				    //
+				    //case 140:
+				    ////M.Setpoint=1000;
+				    //Robot_D[RobotID].M0b  = 0xE8;//low
+				    //Robot_D[RobotID].M0a  = 0X03;//high
+				    //break;
+				    //
+				    //case 150:
+				    ////M.Setpoint=-50;
+				    //Robot_D[RobotID].M0b  = 0xCE;//low
+				    //Robot_D[RobotID].M0a  = 0XFF;//high
+				    ////flag2sec=0;
+				     //time2sec=0;
+				    //break;
+				    //
+			    //}
 		////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
 		  //Robot_D[RobotID].M0b  = 0xD0;//0X18;//-1000//01;//low37121
 		  //Robot_D[RobotID].M0a  = 0x07;//0XFC;//high
@@ -367,14 +367,14 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		  {
 			  LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			  Robot_D[RobotID].RID  = Buf_Rx_L[0];
-			  //Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
-			  //Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
-			  //Robot_D[RobotID].M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
-			  //Robot_D[RobotID].M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
-			  //Robot_D[RobotID].M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
-			  //Robot_D[RobotID].M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
-			  //Robot_D[RobotID].M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
-			  //Robot_D[RobotID].M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
+			  Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
+			  Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
+			  Robot_D[RobotID].M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
+			  Robot_D[RobotID].M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
+			  Robot_D[RobotID].M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
+			  Robot_D[RobotID].M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
+			  Robot_D[RobotID].M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
+			  Robot_D[RobotID].M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
 			  Robot_D[RobotID].KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
 			  Robot_D[RobotID].CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			  Robot_D[RobotID].ASK  = Buf_Rx_L[31];//0b00000000
