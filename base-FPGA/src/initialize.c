@@ -90,7 +90,7 @@ void TimerC1_init(void) // KICK_CHIP -> OC1A (PORTC4)
 	tc_set_wgm(&TCC1,TC_WG_SS);
 	tc_write_period(&TCC1,0x77);
 	tc_set_direction(&TCC1,TC_UP);
-	//tc_enable_cc_channels(&TCC1,TC_CCAEN);
+	tc_enable_cc_channels(&TCC1,TC_CCAEN);
 	tc_enable(&TCC1);
 	//tc_write_cc(&TCC1,TC_CCA,0x5D);
 }

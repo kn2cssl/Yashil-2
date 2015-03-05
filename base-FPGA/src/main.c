@@ -110,7 +110,7 @@ int main (void)
 			}
 			else // if(((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp==0)) 
 			{
-				if(flg_dir==0) //& (flg_chip==0))
+				if((flg_chip & flg_dir)==0)//(flg_dir==0)  //not tested!
 					{
 					tc_enable_cc_channels(&TCC0,TC_CCCEN);
 					}
@@ -131,16 +131,23 @@ int main (void)
 					//flg_chip = 0;
 				//}
 			}
-			if (KCK_DSH_SW)//bazi vaghta begir nagir dare
+			if (KCK_DSH_SW)
 			{
-				//flg_chip = 1;
-				flg_dir = 1;
+				flg_chip = 1;
+				//if(KCK_Sens)
+				//{
+				//	flg_dir = 1;
+				//}
 			}
 			
 			if (free_wheel >= 500 )
 			{
 				NRF_init();
 			}
+			if(KCK_Sens)
+			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
+			else
+			 LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
 		 ////Micro to FPGA communication test number 1 (comment the data packet received from wireless)
 		   //switch(flag2sec)//time2sec)//flag2sec
 			  //{ case 200:
@@ -425,7 +432,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	  }
 	  if((status_L&_TX_DS) == _TX_DS)
 	  {
-		  LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		  //LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 		  wireless_reset=0;
 	  }
 	  
@@ -453,7 +460,11 @@ ISR(TCE1_OVF_vect)//1ms
 		flag2sec++;
 		time2sec=0;
 	}
-	
+	if ((flg_dir & flg_chip)==1)
+	{
+	flg_dir = 1;
+	flg_chip = 0;
+	}
 	if(flg_dir)
 	{    
 		if(kck_time_dir<100)
@@ -487,37 +498,37 @@ ISR(TCE1_OVF_vect)//1ms
 			kck_time_dir=0; flg_dir=0;}
 	}
 	
-	//if(flg_chip)
-	//{
-		//if(kck_time_chip<100)
-		//{
-			//kck_time_chip++;
-			//tc_disable_cc_channels(&TCC0,TC_CCCEN);
+	if(flg_chip)
+	{
+		if(kck_time_chip<100)
+		{
+			kck_time_chip++;
+			tc_disable_cc_channels(&TCC0,TC_CCCEN);
 			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-			//if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
-			//tc_disable_cc_channels(&TCC1,TC_CCAEN);
-			//else
-			//{
-				//if(KCK_DSH_SW)
-				//{
-					//tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					//KCK_Speed_CHIP(KCK_SPEED_HI);
-					//full_charge=0;
-				//}
-				//else if(full_charge==1)
-				//{
-					//tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					//KCK_Speed_CHIP(Robot_D[RobotID].CHP);
-					//full_charge=0;
-				//}
-			//}
-		//}
-		//else {
-			//KCK_Speed_CHIP(KCK_SPEED_OFF);
-			//tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			////LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-		//kck_time_chip=0; flg_chip=0;}
-	//}
+			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
+			tc_disable_cc_channels(&TCC1,TC_CCAEN);
+			else
+			{
+				if(KCK_DSH_SW)
+				{
+					tc_enable_cc_channels(&TCC1,TC_CCAEN);
+					KCK_Speed_CHIP(KCK_SPEED_HI);
+					full_charge=0;
+				}
+				else if(full_charge==1)
+				{
+					tc_enable_cc_channels(&TCC1,TC_CCAEN);
+					KCK_Speed_CHIP(Robot_D[RobotID].CHP);
+					full_charge=0;
+				}
+			}
+		}
+		else {
+			KCK_Speed_CHIP(KCK_SPEED_OFF);
+			tc_enable_cc_channels(&TCC0,TC_CCCEN);
+			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		kck_time_chip=0; flg_chip=0;}
+	}
 }
 //
 //ISR(USARTE0_RXC_vect)       
