@@ -254,7 +254,7 @@ int main (void)
 			  //Robot_D[RobotID].M1a = 3;
 			  //Robot_D[RobotID].M1b = 4;
 		 // }
-		  free_wheel++;
+		  
 		  
 		  
 		    asm("wdr");
@@ -337,18 +337,19 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 char timectrl,time2sec;
 ISR(TCE1_OVF_vect)//1ms
 {
+	free_wheel++;
 	timectrl++;
-	if (timectrl>=32) 
+	if (timectrl>=10) 
 	{
 		ctrlflg=1;
 		timectrl=0;
 	}
-	time2sec++;
-	if (time2sec>=10)
-	{
-		flag2sec++;
-		time2sec=0;
-	}
+	//time2sec++;
+	//if (time2sec>=10)
+	//{
+		//flag2sec++;
+		//time2sec=0;
+	//}
 	if(flg_dir)
 	{    
 		if(kck_time_dir<100)
@@ -432,6 +433,13 @@ ISR(TCD0_OVF_vect)
 
 ISR(TCD0_CCA_vect)
 {   
+	 if ( free_wheel>100)
+	 {
+		 Robot_D[RobotID].M0a = 1;
+		 Robot_D[RobotID].M0b = 2;
+		 Robot_D[RobotID].M1a = 3;
+		 Robot_D[RobotID].M1b = 4;
+	 }
 	switch (motor_num)
 	{
 		
