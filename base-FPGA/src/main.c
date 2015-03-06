@@ -119,24 +119,27 @@ int main (void)
 			{
 				if (Robot_D[RobotID].KCK )
 				{
-					flg_dir = 1;
+					if(KCK_Sens)
+					{
+					flg_dir = 1;	
+					}
+					
 				}
 				if (Robot_D[RobotID].CHP )
 				{
-					flg_chip = 1;
+					if(KCK_Sens)
+					{
+					flg_chip = 1;	
+					}
+					
 				}
-				//if ((Robot_D[RobotID].KCK)==1 & (Robot_D[RobotID].CHP)==1)
-				//{
-					//flg_dir = 1;
-					//flg_chip = 0;
-				//}
 			}
 			if (KCK_DSH_SW)
 			{
-				flg_chip = 1;
+				//flg_chip = 1;
 				//if(KCK_Sens)
 				//{
-				//	flg_dir = 1;
+					flg_dir = 1;
 				//}
 			}
 			

@@ -41,7 +41,7 @@
 #define KCK_Sens_PORT PORTD
 #define KCK_Sens_PIN_bm		PIN1_bm
 #define KCK_Sens_PIN_bp		PIN1_bp
-#define KCK_Sens (((KCK_Sens_PORT.IN &KCK_Sens_PIN_bm) >> KCK_Sens_PIN_bp)?0x00:0xFF)
+#define KCK_Sens (((KCK_Sens_PORT.IN &KCK_Sens_PIN_bm) >> KCK_Sens_PIN_bp)?0xFF:0x00)
 //SW_cap
 #define KCK_DSH_SW_PORT PORTD
 #define KCK_DSH_SW_PIN_bm	PIN0_bm
