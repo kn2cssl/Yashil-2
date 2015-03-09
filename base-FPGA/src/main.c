@@ -44,7 +44,7 @@ int motor_num=0,test=0;
 uint32_t kck_time_dir,time_test,kck_time_chip;
 int free_wheel=0;
 int wireless_reset=0;
-int adc =0;
+int adc =0,adc_cur_M1,adc_cur_M2,adc_cur_M3,adc_cur_M4;
 int flg_dir=0, flg_chip=0;
 int Robot_Select,Robot_Select_Last;
 int Test_Data[8];
@@ -76,6 +76,7 @@ int main (void)
 	TimerE1_init();
 	USARTE0_init();
 	ADCA_init();
+	ADCB_init();
 	//wdt_enable();
 
 	// Globally enable interrupts
@@ -89,6 +90,19 @@ int main (void)
 	while(1)
 	  {  
 		    asm("wdr");
+			//////////////////////////////////////////////////////// motor current sensor
+			adc_cur_M1 = adc_get_unsigned_result(&ADCA,ADC_CH1);
+			//SEND TEST DATA TO FT232
+			char str1[20];
+			uint8_t count1 = sprintf(str1,"%d\r",(int)adc_cur_M1);
+			
+			for (uint8_t i=0;i<count1;i++)
+			{
+			usart_putchar(&USARTE0,str1[i]);
+			}
+			/////////////////////////////////////////////////////////
+			
+			
 		   // BUZZER 
 		    adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
 		   //adc = 1200;
