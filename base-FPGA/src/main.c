@@ -31,11 +31,33 @@
 #include "initialize.h"
 #include "nrf24l01_L.h"
 #include "transmitter.h" //warning mide az sendnewdata va senddata
+#include "gyro.h"
 #include <stdlib.h>
 
+///////////////////////////////////////////////////////////////gyro defines
+#define CPU_SPEED       32000000
+#define BAUDRATE	    100000 //100000
+#define TWI_BAUDSETTING TWI_BAUD(CPU_SPEED, BAUDRATE)
+#define ROBOTRADIUS 0.090
+#define SpeedToRPM 1375.14
+#define precision 10000.0
 
+
+long int yaw_speed=0,yaw_rot=0;
+float gyro_degree=0;
+float degree,degree_last,degree_err;
+int icounter=0;
+
+uint16_t t_1ms=0,t_gyro=0,t_gyro_last=0,dt;
+char buff_offset[320];
+int offset=0;
+
+float kp_gyro=0,ki_gyro=0,kd_gyro=0;
+float Angl_setpoint,Angl_Err,Angl_i,Angl_d,Angl_PID;
+//////////////////////////////////////////////////////////////////////////
 void NRF_init (void) ;
 void data_transmission (void);
+
 
 unsigned char Buf_Rx_L[_Buffer_Size] ;
 char Buf_Tx_L[_Buffer_Size];
@@ -45,7 +67,7 @@ uint32_t kck_time_dir,time_test,kck_time_chip;
 int free_wheel=0;
 int wireless_reset=0;
 int adc =0;
-int flg_dir=0, flg_chip=0;
+int flg_dir=0, flg_chip=0,flg_test=0;
 int Robot_Select,Robot_Select_Last;
 int Test_Data[8];
 int time2sec=0;
@@ -62,8 +84,30 @@ uint64_t flag2sec=0;
 int i=0;
 int parity_calc(signed int data);
 
+
+//////////  motor speed variable
+struct Robot
+{
+	float angel_setpoint;
+	int dir;
+	int dir_cam;
+	int L_spead_x;//linear sped x
+	int L_spead_y;//linear sped y
+	float R_spead;
+	float R_spead_last; //rotational speed
+}This_Robot;
+
+float rotate[4][3],speed[3][1];
+signed int motor[4][1];
+
+
 int main (void)
 {
+	
+	/* Initialize TWI master. */
+	TWI_MasterInit(&twiMaster,&TWIC,TWI_MASTER_INTLVL_HI_gc,TWI_BAUDSETTING);
+	TWIC.SLAVE.CTRLA=0;  //slave disabled
+	
 	En_RC32M();
 
 	//Enable LowLevel & HighLevel Interrupts
@@ -86,9 +130,107 @@ int main (void)
 	//// NRF Initialize
 	NRF_init () ;
 	
+	mpu6050_init(); // This Initialization must be after NRF Initialize otherwise nrf wont work!!
+	yaw_rot=0;
+	yaw_speed=0;
+	gyro_degree=0;
+	icounter=0;
+	
 	while(1)
-	  {  
+	{  
 		    asm("wdr");
+			////////////////////////////////////////////////////   calculating the offset of gyro
+			//offset=0;
+			//for (int i=0;i<200;i++)
+			//{
+			//buff_offset[i]=read_mpu();
+			//offset+=buff_offset[i];
+			//
+			//}
+			//offset = offset/200;
+			///////////////////////////////////////////////////gyro
+			
+		//if (flg_test)
+		//{
+			//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
+			
+			yaw_speed=read_mpu();
+			
+			t_gyro_last=t_gyro;
+			t_gyro=t_1ms;
+			dt = t_gyro-t_gyro_last;
+			
+			yaw_rot -= (dt*yaw_speed);
+			
+			if (icounter<6)
+			{
+				yaw_rot=0;
+				icounter++;
+			}
+			
+			gyro_degree=yaw_rot/1000;
+
+			if (gyro_degree>=180)
+			{
+				gyro_degree -=360;
+			}
+			else if (gyro_degree<=-180)
+			{
+				gyro_degree+=360;
+			}
+			
+			degree = gyro_degree;
+			Test_Data[0] = degree;
+			
+			Test_Data[2] = dt;
+			//uint8_t count1;
+			//char str1[200];
+			//count1 = sprintf(str1,"%d,%d \r",(int)degree,dt);
+			//for (uint8_t i=0;i<count1;i++)
+			//{
+			//usart_putchar(&USARTE0,str1[i]);
+			//}
+			This_Robot.L_spead_x = 0;//(( ((Robot_D[RobotID].LinearSpeed_x0<<8) & 0xff00) | (Robot_D[RobotID].LinearSpeed_x1 & 0x00ff) ));
+			This_Robot.L_spead_y = 0;//(( ((Robot_D[RobotID].LinearSpeed_y0<<8) & 0xff00) | (Robot_D[RobotID].LinearSpeed_y1 & 0x00ff) ));
+			This_Robot.angel_setpoint = 150;//(float)Robot_D[RobotID].CHP;//(( ((Robot_D[RobotID].M0a<<8) & 0xff00) | (Robot_D[RobotID].M0b & 0x00ff) ));//
+						
+			//if (Angl_setpoint == This_Robot.angel_setpoint)
+			This_Robot.dir = gyro_degree;
+			//else
+			//{
+				//This_Robot.dir=0;
+				Angl_setpoint = This_Robot.angel_setpoint;
+			//}
+				Test_Data[1] = (int)(Angl_setpoint);
+				This_Robot.R_spead = ((Angl_setpoint-This_Robot.dir)*3.5);
+				degree_err= Angl_setpoint-This_Robot.dir;
+				
+				
+				speed[0][0] = -(float)((float)This_Robot.L_spead_x * (float)cos(This_Robot.dir/precision) + (float)This_Robot.L_spead_y * (float)sin(This_Robot.dir/precision))/precision;
+				speed[1][0] = -(float)(-(float)This_Robot.L_spead_x * (float)sin(This_Robot.dir/precision) + (float)This_Robot.L_spead_y * (float)cos(This_Robot.dir/precision))/precision;
+				speed[2][0] = -(float)(This_Robot.R_spead)*24.0;//precision;    SpeedToRPM*pi/180 = 24
+
+				rotate[0][0] = 0.832063;//cos( 0.18716 * M_PI);
+				rotate[1][0] = 0.707107;//sin( M_PI / 4.0 );
+				rotate[2][0] = -0.707107;//-cos( M_PI / 4.0 );
+				rotate[3][0] = -0.832063;//-cos( 0.18716 * M_PI);
+				rotate[0][1] = -0.554682;//-sin(0.18716 * M_PI );
+				rotate[1][1] = 0.707107;//cos(M_PI / 4.0 );
+				rotate[2][1] = 0.707107;//sin(M_PI / 4.0);
+				rotate[3][1] = -0.554682;//-sin(0.18716 * M_PI);
+
+				rotate[0][2] = -ROBOTRADIUS;
+				rotate[1][2] = -ROBOTRADIUS;
+				rotate[2][2] = -ROBOTRADIUS;
+				rotate[3][2] = -ROBOTRADIUS;
+
+				motor[0][0] = (rotate[0][0] * speed[0][0] + rotate[0][1] * speed[1][0] + rotate[0][2] * speed[2][0]);//*SpeedToRPM;
+				motor[1][0] = (rotate[1][0] * speed[0][0] + rotate[1][1] * speed[1][0] + rotate[1][2] * speed[2][0]);//*SpeedToRPM;
+				motor[2][0] = (rotate[2][0] * speed[0][0] + rotate[2][1] * speed[1][0] + rotate[2][2] * speed[2][0]);//*SpeedToRPM;
+				motor[3][0] = (rotate[3][0] * speed[0][0] + rotate[3][1] * speed[1][0] + rotate[3][2] * speed[2][0]);//*SpeedToRPM;
+			
+			//////////////////////////////////////////////////////////////////////////////////// end of gyro
+			
 		   // BUZZER 
 		    adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
 		   //adc = 1200;
@@ -110,7 +252,7 @@ int main (void)
 			}
 			else // if(((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp==0)) 
 			{
-				if((flg_chip & flg_dir)==0)//(flg_dir==0)  //not tested!
+				if(flg_dir==0) //& (flg_chip==0))
 					{
 					tc_enable_cc_channels(&TCC0,TC_CCCEN);
 					}
@@ -119,247 +261,49 @@ int main (void)
 			{
 				if (Robot_D[RobotID].KCK )
 				{
-					if(KCK_Sens)
-					{
-					flg_dir = 1;	
-					}
-					
+					//flg_dir = 1;
 				}
 				if (Robot_D[RobotID].CHP )
 				{
-					if(KCK_Sens)
-					{
-					flg_chip = 1;	
-					}
-					
+					flg_chip = 1;
 				}
-			}
-			if (KCK_DSH_SW)
-			{
-				//flg_chip = 1;
-				//if(KCK_Sens)
+				//if ((Robot_D[RobotID].KCK)==1 & (Robot_D[RobotID].CHP)==1)
 				//{
-					flg_dir = 1;
+					//flg_dir = 1;
+					//flg_chip = 0;
 				//}
 			}
 			
-			if (free_wheel >= 500 )
-			{
-				NRF_init();
-			}
-			if(KCK_Sens)
-			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
-			else
-			 LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
-		 ////Micro to FPGA communication test number 1 (comment the data packet received from wireless)
-		   //switch(flag2sec)//time2sec)//flag2sec
-			  //{ case 200:
-			   //// M.Setpoint=1000;
-			   //Robot_D[RobotID].M0b  = 0xE8;//low
-			   //Robot_D[RobotID].M0a  = 0X03;//high
-			   //break;
-			   //
-			   //case 400:
-			   ////M.Setpoint=2000;
-			   //Robot_D[RobotID].M0b  = 0xD0;//low
-			   //Robot_D[RobotID].M0a  = 0X07;//high
-			   //break;
-			   //
-			   //case 600:
-			   ////M.Setpoint=500;
-			   //Robot_D[RobotID].M0b  = 0xF4;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 800:
-			   ////M.Setpoint=4000;
-			   //Robot_D[RobotID].M0b  = 0xA0;//low
-			   //Robot_D[RobotID].M0a  = 0X0F;//high
-			   //break;
-			   //
-			   //case 1000:
-			   ////M.Setpoint=1000;
-			   //Robot_D[RobotID].M0b  = 0xE8;//low
-			   //Robot_D[RobotID].M0a  = 0X03;//high
-			   //break;
-			   //
-			   //case 1200:
-			   ////M.Setpoint=500;
-			   //Robot_D[RobotID].M0b  = 0xF4;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 1400:
-			   ////M.Setpoint=-500;
-			   //Robot_D[RobotID].M0b  = 0x0C;//low
-			   //Robot_D[RobotID].M0a  = 0XFE;//high
-			   //break;
-			   //
-			   //case 1600:
-			   ////M.Setpoint=400;
-			   //Robot_D[RobotID].M0b  = 0x90;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 1800:
-			   ////M.Setpoint=350;
-			   //Robot_D[RobotID].M0b  = 0x5E;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 2000:
-			   ////M.Setpoint=340;
-			   //Robot_D[RobotID].M0b  = 0x54;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 2200:
-			   ////M.Setpoint=330;
-			   //Robot_D[RobotID].M0b  = 0x4A;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 2400:
-			   ////M.Setpoint=100;
-			   //Robot_D[RobotID].M0b  = 0x64;//low
-			   //Robot_D[RobotID].M0a  = 0X00;//high
-			   //break;
-			   //
-			   //case 2600:
-			   ////M.Setpoint=50;
-			   //Robot_D[RobotID].M0b  = 0x32;//low
-			   //Robot_D[RobotID].M0a  = 0X00;//high
-			   //break;
-			   //
-			   //case 2800:
-			   ////M.Setpoint=1000;
-			   //Robot_D[RobotID].M0b  = 0xE8;//low
-			   //Robot_D[RobotID].M0a  = 0X03;//high
-			   //break;
-			   //
-			   //case 3000:
-			   ////M.Setpoint=-50;
-			   //Robot_D[RobotID].M0b  = 0xCE;//low
-			   //Robot_D[RobotID].M0a  = 0XFF;//high
-			   //flag2sec=0;
-			  //// time2sec=0;
-			   //break;
-			   //}
-			    //switch(time2sec)//flag2sec
-			    //{   case 10:
-				    //// M.Setpoint=1000;
-				    //Robot_D[RobotID].M0b  = 0xE8;//low
-				    //Robot_D[RobotID].M0a  = 0X03;//high
-				    //break;
-				    //
-				    //case 20:
-				    ////M.Setpoint=2000;
-				    //Robot_D[RobotID].M0b  = 0xD0;//low
-				    //Robot_D[RobotID].M0a  = 0X07;//high
-				    //break;
-				    //
-				    //case 30:
-				    ////M.Setpoint=500;
-				    //Robot_D[RobotID].M0b  = 0xF4;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 40:
-				    ////M.Setpoint=4000;
-				    //Robot_D[RobotID].M0b  = 0xA0;//low
-				    //Robot_D[RobotID].M0a  = 0X0F;//high
-				    //break;
-				    //
-				    //case 50:
-				    ////M.Setpoint=1000;
-				    //Robot_D[RobotID].M0b  = 0xE8;//low
-				    //Robot_D[RobotID].M0a  = 0X03;//high
-				    //break;
-				    //
-				    //case 60:
-				    ////M.Setpoint=500;
-				    //Robot_D[RobotID].M0b  = 0xF4;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 70:
-				    ////M.Setpoint=-500;
-				    //Robot_D[RobotID].M0b  = 0x0C;//low
-				    //Robot_D[RobotID].M0a  = 0XFE;//high
-				    //break;
-				    //
-				    //case 80:
-				    ////M.Setpoint=400;
-				    //Robot_D[RobotID].M0b  = 0x90;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 90:
-				    ////M.Setpoint=350;
-				    //Robot_D[RobotID].M0b  = 0x5E;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 100:
-				    ////M.Setpoint=340;
-				    //Robot_D[RobotID].M0b  = 0x54;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 110:
-				    ////M.Setpoint=330;
-				    //Robot_D[RobotID].M0b  = 0x4A;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 120:
-				    ////M.Setpoint=100;
-				    //Robot_D[RobotID].M0b  = 0x64;//low
-				    //Robot_D[RobotID].M0a  = 0X00;//high
-				    //break;
-				    //
-				    //case 130:
-				    ////M.Setpoint=50;
-				    //Robot_D[RobotID].M0b  = 0x32;//low
-				    //Robot_D[RobotID].M0a  = 0X00;//high
-				    //break;
-				    //
-				    //case 140:
-				    ////M.Setpoint=1000;
-				    //Robot_D[RobotID].M0b  = 0xE8;//low
-				    //Robot_D[RobotID].M0a  = 0X03;//high
-				    //break;
-				    //
-				    //case 150:
-				    ////M.Setpoint=-50;
-				    //Robot_D[RobotID].M0b  = 0xCE;//low
-				    //Robot_D[RobotID].M0a  = 0XFF;//high
-				    ////flag2sec=0;
-				     //time2sec=0;
-				    //break;
-				    //
-			    //}
-		////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
-		  //Robot_D[RobotID].M0b  = 0xD0;//0X18;//-1000//01;//low37121
-		  //Robot_D[RobotID].M0a  = 0x07;//0XFC;//high
-		  //Robot_D[RobotID].M1b  = 0XE8;//2000//ghalat17325
-		  //Robot_D[RobotID].M1a  = 0X03;
-		  //Robot_D[RobotID].M2b  = 0XDC;//1000//low13703
-		  //Robot_D[RobotID].M2a  = 0X05;//high
-		  //Robot_D[RobotID].M3b  = 0xF4;//3000//32;//ghalat30258
-		  //Robot_D[RobotID].M3a  = 0X01;//76;
-		  
-			////SEND TEST DATA TO FT232
-			//char str1[20];
-		    //uint8_t count1 = sprintf(str1,"%d,%d,%d,%d\r",FPGA_DATA_PORT.IN,MOTORNUM_PORT.IN,((PARITY_PORT.IN & PARITY_bm)>>PARITY_bp),((CLK_par_PORT.IN & CLK_par_bm)>>CLK_par_bp));
-			//
-			//for (uint8_t i=0;i<count1;i++)
+			
+			
+			//if (flg_test)//(int)degree_err == 10)
 			//{
-				//usart_putchar(&USARTE0,str1[i]);
 				//
+				//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
+				//flg_dir=1;
+				//flg_test=0;
 			//}
-			//usart_putchar(&USARTE0,'a');
-	  }
+			if (KCK_DSH_SW)//bazi vaghta begir nagir dare
+			{
+				//flg_chip = 1;
+				flg_dir = 1;
+			}
+			
+			//if (free_wheel >= 500 )
+			//{
+				//NRF_init();
+			//}
+			if (KCK_Sens)
+			LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
+			else
+			LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;
+		
+		//ctrlflg=0;	
+		//flg_test=0;
+		//}
+		
+
+	}
 }
 
 ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt Pin
@@ -374,16 +318,16 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		  free_wheel=0 ;
 		  if(Buf_Rx_L[0] == 'L')//RobotID)
 		  {
-			  LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
+			  //LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			  Robot_D[RobotID].RID  = Buf_Rx_L[0];
-			  Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
-			  Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
-			  Robot_D[RobotID].M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
-			  Robot_D[RobotID].M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
-			  Robot_D[RobotID].M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
-			  Robot_D[RobotID].M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
-			  Robot_D[RobotID].M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
-			  Robot_D[RobotID].M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
+			  Robot_D[RobotID].M0a  = (motor[0][0] >> 8) & 0x0ff;//Buf_Rx_L[1+ RobotID%3 * 10];//
+			  Robot_D[RobotID].M0b  = motor[0][0] & 0x0ff;//Buf_Rx_L[2+ RobotID%3 * 10];//
+			  Robot_D[RobotID].M1a  = (motor[1][0] >> 8) & 0x0ff;//Buf_Rx_L[3+ RobotID%3 * 10];
+			  Robot_D[RobotID].M1b  = motor[1][0] & 0x0ff;//Buf_Rx_L[4+ RobotID%3 * 10];
+			  Robot_D[RobotID].M2a  = (motor[2][0] >> 8) & 0x0ff;//Buf_Rx_L[5+ RobotID%3 * 10];
+			  Robot_D[RobotID].M2b  = motor[2][0] & 0x0ff;//Buf_Rx_L[6+ RobotID%3 * 10];
+			  Robot_D[RobotID].M3a  = (motor[3][0] >> 8) & 0x0ff;//Buf_Rx_L[7+ RobotID%3 * 10];
+			  Robot_D[RobotID].M3b  = motor[3][0] & 0x0ff;//Buf_Rx_L[8+ RobotID%3 * 10];
 			  Robot_D[RobotID].KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
 			  Robot_D[RobotID].CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			  Robot_D[RobotID].ASK  = Buf_Rx_L[31];//0b00000000
@@ -448,26 +392,27 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 char timectrl;//,time2sec;
 ISR(TCE1_OVF_vect)//1ms
 {
+	//if (time_test<=10)
+	//{
+		//time_test++;
+		//wdt_reset_mcu();
+	//}
+	t_1ms++;
+
+	
 	time_test++;
-	timectrl++;
+	if (time_test==20){flg_test=1;	time_test=0;}
+	
+	
 	wireless_reset++;
 	free_wheel++;
-	if (timectrl>=32) 
-	{
-		ctrlflg=1;
-		timectrl=0;
-	}
 	time2sec++;
 	if (time2sec>=10)
 	{
 		flag2sec++;
 		time2sec=0;
 	}
-	if ((flg_dir & flg_chip)==1)
-	{
-	flg_dir = 1;
-	flg_chip = 0;
-	}
+	
 	if(flg_dir)
 	{    
 		if(kck_time_dir<100)
@@ -501,48 +446,53 @@ ISR(TCE1_OVF_vect)//1ms
 			kck_time_dir=0; flg_dir=0;}
 	}
 	
-	if(flg_chip)
-	{
-		if(kck_time_chip<100)
-		{
-			kck_time_chip++;
-			tc_disable_cc_channels(&TCC0,TC_CCCEN);
+	//if(flg_chip)
+	//{
+		//if(kck_time_chip<100)
+		//{
+			//kck_time_chip++;
+			//tc_disable_cc_channels(&TCC0,TC_CCCEN);
 			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
-			tc_disable_cc_channels(&TCC1,TC_CCAEN);
-			else
-			{
-				if(KCK_DSH_SW)
-				{
-					tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					KCK_Speed_CHIP(KCK_SPEED_HI);
-					full_charge=0;
-				}
-				else if(full_charge==1)
-				{
-					tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					KCK_Speed_CHIP(Robot_D[RobotID].CHP);
-					full_charge=0;
-				}
-			}
-		}
-		else {
-			KCK_Speed_CHIP(KCK_SPEED_OFF);
-			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-		kck_time_chip=0; flg_chip=0;}
-	}
+			//if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
+			//tc_disable_cc_channels(&TCC1,TC_CCAEN);
+			//else
+			//{
+				//if(KCK_DSH_SW)
+				//{
+					//tc_enable_cc_channels(&TCC1,TC_CCAEN);
+					//KCK_Speed_CHIP(KCK_SPEED_HI);
+					//full_charge=0;
+				//}
+				//else if(full_charge==1)
+				//{
+					//tc_enable_cc_channels(&TCC1,TC_CCAEN);
+					//KCK_Speed_CHIP(Robot_D[RobotID].CHP);
+					//full_charge=0;
+				//}
+			//}
+		//}
+		//else {
+			//KCK_Speed_CHIP(KCK_SPEED_OFF);
+			//tc_enable_cc_channels(&TCC0,TC_CCCEN);
+			////LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		//kck_time_chip=0; flg_chip=0;}
+	//}
 }
 //
-//ISR(USARTE0_RXC_vect)       
-//{
-	//
-//}
-
+ISR(USARTE0_RXC_vect)       
+{
+	
+}
+ISR(TWIC_TWIM_vect)
+{
+	TWI_MasterInterruptHandler(&twiMaster);
+	
+	
+}
 ISR(TCD0_OVF_vect)
 {
 	wdt_reset();
-	CLK_par_PORT.OUTTGL = CLK_par_bm;	
+	CLK_par_PORT.OUTTGL = CLK_par_bm;
 };
 
 ISR(TCD0_CCA_vect)
@@ -727,17 +677,17 @@ void NRF_init (void)
 void data_transmission (void)
 {
 	//transmitting data to wireless board/////////////////////////////////////////////////
-	 		Test_Data[0] = adc/12;
-	 		Test_Data[1] = time_test;
+	 		//Test_Data[1] = (int)Robot_D[RobotID].CHP;
+	 		//Test_Data[1] = time_test;
 	
-	Buf_Tx_L[0]  = Robot_D[RobotID].M0a;//(Test_Data[0]>> 8) & 0xFF;	//drive test data
-	Buf_Tx_L[1]  = Robot_D[RobotID].M0b;//Test_Data[0] & 0xFF;			//drive test data
-	Buf_Tx_L[2]  = Robot_D[RobotID].M1a;//(Test_Data[1]>> 8) & 0xFF;	//drive test data
-	Buf_Tx_L[3]  = Robot_D[RobotID].M1b;//Test_Data[1] & 0xFF;			//drive test data
-	Buf_Tx_L[4]  = Robot_D[RobotID].M2a;//(Test_Data[2]>> 8) & 0xFF;	//drive test data
-	Buf_Tx_L[5]  = Robot_D[RobotID].M2b;//Test_Data[2] & 0xFF;			//drive test data
-	Buf_Tx_L[6]  = Robot_D[RobotID].M3a;//(Test_Data[3]>> 8) & 0xFF;	//drive test data
-	Buf_Tx_L[7]  = Robot_D[RobotID].M3b;//Test_Data[3] & 0xFF;			//drive test data
+	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//Robot_D[RobotID].M0a;//	//drive test data
+	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;//Robot_D[RobotID].M0b;//			//drive test data
+	Buf_Tx_L[2]  = (Test_Data[1]>> 8) & 0xFF;//Robot_D[RobotID].M1a;//	//drive test data
+	Buf_Tx_L[3]  = Test_Data[1] & 0xFF;//Robot_D[RobotID].M1b;//			//drive test data
+	Buf_Tx_L[4]  = (Test_Data[2]>> 8) & 0xFF;//Robot_D[RobotID].M2a;//	//drive test data
+	Buf_Tx_L[5]  = Test_Data[2] & 0xFF;//Robot_D[RobotID].M2b;//			//drive test data
+	Buf_Tx_L[6]  = (Test_Data[3]>> 8) & 0xFF;//Robot_D[RobotID].M3a;//	//drive test data
+	Buf_Tx_L[7]  = Test_Data[3] & 0xFF;//Robot_D[RobotID].M3b;//			//drive test data
 	//Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
 	//Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
 	//Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
