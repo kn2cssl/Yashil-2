@@ -45,15 +45,16 @@
 
 long int yaw_speed=0,yaw_rot=0;
 float gyro_degree=0;
-float degree,degree_last,degree_err;
+float degree,degree_last;
 int icounter=0;
+int degree_err=0;
 
 uint16_t t_1ms=0,t_gyro=0,t_gyro_last=0,dt;
 char buff_offset[320];
 int offset=0;
 
 float kp_gyro=0,ki_gyro=0,kd_gyro=0;
-float Angl_setpoint,Angl_Err,Angl_i,Angl_d,Angl_PID;
+float Angl_setpoint=0,Angl_Err,Angl_i,Angl_d,Angl_PID;
 //////////////////////////////////////////////////////////////////////////
 void NRF_init (void) ;
 void data_transmission (void);
@@ -139,7 +140,14 @@ int main (void)
 	while(1)
 	{  
 		    asm("wdr");
-			////////////////////////////////////////////////////   calculating the offset of gyro
+			if (flg_test)
+			{
+				mpu6050_init();
+				time_test=0;
+			}
+			flg_test=0;
+			if(time_test>=5)
+			{////////////////////////////////////////////////////   calculating the offset of gyro
 			//offset=0;
 			//for (int i=0;i<200;i++)
 			//{
@@ -153,7 +161,7 @@ int main (void)
 		//if (flg_test)
 		//{
 			//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
-			
+			degree_last = gyro_degree;
 			yaw_speed=read_mpu();
 			
 			t_gyro_last=t_gyro;
@@ -180,8 +188,10 @@ int main (void)
 			}
 			
 			degree = gyro_degree;
-			Test_Data[0] = degree;
+			degree = degree_last + 0.2*(degree - degree_last) ;
 			
+			Test_Data[0] = degree;
+			Test_Data[1] = (int)(Angl_setpoint);
 			Test_Data[2] = dt;
 			//uint8_t count1;
 			//char str1[200];
@@ -192,18 +202,30 @@ int main (void)
 			//}
 			This_Robot.L_spead_x = 0;//(( ((Robot_D[RobotID].LinearSpeed_x0<<8) & 0xff00) | (Robot_D[RobotID].LinearSpeed_x1 & 0x00ff) ));
 			This_Robot.L_spead_y = 0;//(( ((Robot_D[RobotID].LinearSpeed_y0<<8) & 0xff00) | (Robot_D[RobotID].LinearSpeed_y1 & 0x00ff) ));
-			This_Robot.angel_setpoint = 150;//(float)Robot_D[RobotID].CHP;//(( ((Robot_D[RobotID].M0a<<8) & 0xff00) | (Robot_D[RobotID].M0b & 0x00ff) ));//
+			This_Robot.angel_setpoint = (float)Robot_D[RobotID].CHP;//(( ((Robot_D[RobotID].M0a<<8) & 0xff00) | (Robot_D[RobotID].M0b & 0x00ff) ));//
 						
-			//if (Angl_setpoint == This_Robot.angel_setpoint)
+			if (Angl_setpoint == This_Robot.angel_setpoint)
 			This_Robot.dir = gyro_degree;
-			//else
-			//{
-				//This_Robot.dir=0;
+			else
+			{
+				This_Robot.dir=0;
+				gyro_degree=0;
 				Angl_setpoint = This_Robot.angel_setpoint;
-			//}
-				Test_Data[1] = (int)(Angl_setpoint);
-				This_Robot.R_spead = ((Angl_setpoint-This_Robot.dir)*3.5);
+			}
 				degree_err= Angl_setpoint-This_Robot.dir;
+				if (degree_err >=5)
+				{
+					This_Robot.R_spead = ((Angl_setpoint-This_Robot.dir)*3.5);
+				}
+				else
+				{
+					This_Robot.R_spead = 0;
+					
+				}
+				
+				//degree_err= (int)(90.0 -degree);
+				//if ( degree_err>=5 && degree_err<=10 )
+				//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 				
 				
 				speed[0][0] = -(float)((float)This_Robot.L_spead_x * (float)cos(This_Robot.dir/precision) + (float)This_Robot.L_spead_y * (float)sin(This_Robot.dir/precision))/precision;
@@ -230,7 +252,7 @@ int main (void)
 				motor[3][0] = (rotate[3][0] * speed[0][0] + rotate[3][1] * speed[1][0] + rotate[3][2] * speed[2][0]);//*SpeedToRPM;
 			
 			//////////////////////////////////////////////////////////////////////////////////// end of gyro
-			
+		}
 		   // BUZZER 
 		    adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
 		   //adc = 1200;
@@ -259,14 +281,18 @@ int main (void)
 			}
 			if (full_charge)
 			{
+				//if ( degree_err>=5 && degree_err<=10 )
+				//{
+					//flg_dir=1;
+				//}
 				if (Robot_D[RobotID].KCK )
 				{
-					//flg_dir = 1;
+					flg_dir = 1;
 				}
-				if (Robot_D[RobotID].CHP )
-				{
-					flg_chip = 1;
-				}
+				//if (Robot_D[RobotID].CHP )
+				//{
+					//flg_chip = 1;
+				//}
 				//if ((Robot_D[RobotID].KCK)==1 & (Robot_D[RobotID].CHP)==1)
 				//{
 					//flg_dir = 1;
@@ -276,13 +302,7 @@ int main (void)
 			
 			
 			
-			//if (flg_test)//(int)degree_err == 10)
-			//{
-				//
-				//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
-				//flg_dir=1;
-				//flg_test=0;
-			//}
+			
 			if (KCK_DSH_SW)//bazi vaghta begir nagir dare
 			{
 				//flg_chip = 1;
@@ -398,10 +418,11 @@ ISR(TCE1_OVF_vect)//1ms
 		//wdt_reset_mcu();
 	//}
 	t_1ms++;
-
-	
+if (time_test<5)
+{
 	time_test++;
-	if (time_test==20){flg_test=1;	time_test=0;}
+	if(time_test==2) flg_test=1;
+}
 	
 	
 	wireless_reset++;
