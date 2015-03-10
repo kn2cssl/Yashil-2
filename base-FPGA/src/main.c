@@ -36,7 +36,7 @@
 
 ///////////////////////////////////////////////////////////////gyro defines
 #define CPU_SPEED       32000000
-#define BAUDRATE	    100000 //100000
+#define BAUDRATE	    500000 //100000
 #define TWI_BAUDSETTING TWI_BAUD(CPU_SPEED, BAUDRATE)
 #define ROBOTRADIUS 0.090
 #define SpeedToRPM 1375.14
@@ -49,7 +49,7 @@ float degree,degree_last;
 int icounter=0;
 int degree_err=0;
 
-uint16_t t_1ms=0,t_gyro=0,t_gyro_last=0,dt;
+uint16_t t_1ms=0,t_100us=0,t_gyro=0,t_gyro_last=0,dt;
 char buff_offset[320];
 int offset=0;
 
@@ -119,6 +119,7 @@ int main (void)
 	TimerC0_init();
 	TimerC1_init();
 	TimerE1_init();
+	TimerE0_init();
 	USARTE0_init();
 	ADCA_init();
 	//wdt_enable();
@@ -166,7 +167,10 @@ int main (void)
 			
 			t_gyro_last=t_gyro;
 			t_gyro=t_1ms;
-			dt = t_gyro-t_gyro_last;
+			dt = (t_gyro-t_gyro_last);
+			//t_gyro_last=t_gyro;
+			//t_gyro=t_100us;
+			//dt = (t_gyro-t_gyro_last)*2.0;
 			
 			yaw_rot -= (dt*yaw_speed);
 			
@@ -202,7 +206,7 @@ int main (void)
 			//}
 			This_Robot.L_spead_x = 0;//(( ((Robot_D[RobotID].LinearSpeed_x0<<8) & 0xff00) | (Robot_D[RobotID].LinearSpeed_x1 & 0x00ff) ));
 			This_Robot.L_spead_y = 0;//(( ((Robot_D[RobotID].LinearSpeed_y0<<8) & 0xff00) | (Robot_D[RobotID].LinearSpeed_y1 & 0x00ff) ));
-			This_Robot.angel_setpoint = (float)Robot_D[RobotID].CHP;//(( ((Robot_D[RobotID].M0a<<8) & 0xff00) | (Robot_D[RobotID].M0b & 0x00ff) ));//
+			This_Robot.angel_setpoint = 15.0;//(float)Robot_D[RobotID].CHP;//(( ((Robot_D[RobotID].M0a<<8) & 0xff00) | (Robot_D[RobotID].M0b & 0x00ff) ));//
 						
 			if (Angl_setpoint == This_Robot.angel_setpoint)
 			This_Robot.dir = gyro_degree;
@@ -213,9 +217,9 @@ int main (void)
 				Angl_setpoint = This_Robot.angel_setpoint;
 			}
 				degree_err= Angl_setpoint-This_Robot.dir;
-				if (degree_err >=5)
+				if (degree_err >=2)
 				{
-					This_Robot.R_spead = ((Angl_setpoint-This_Robot.dir)*3.5);
+					This_Robot.R_spead = ((Angl_setpoint-This_Robot.dir)*7.5);
 				}
 				else
 				{
@@ -223,9 +227,8 @@ int main (void)
 					
 				}
 				
-				//degree_err= (int)(90.0 -degree);
-				//if ( degree_err>=5 && degree_err<=10 )
-				//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
+				degree_err= (int)(Angl_setpoint -degree);
+				
 				
 				
 				speed[0][0] = -(float)((float)This_Robot.L_spead_x * (float)cos(This_Robot.dir/precision) + (float)This_Robot.L_spead_y * (float)sin(This_Robot.dir/precision))/precision;
@@ -281,7 +284,7 @@ int main (void)
 			}
 			if (full_charge)
 			{
-				//if ( degree_err>=5 && degree_err<=10 )
+				//if (abs(degree_err)<=5)
 				//{
 					//flg_dir=1;
 				//}
@@ -301,7 +304,12 @@ int main (void)
 			}
 			
 			
-			
+			if ( abs(degree_err)<=5 )
+			{LED_Red_PORT.OUTTGL = LED_Red_PIN_bm; 
+			//	flg_dir=1;
+			}
+			else
+			LED_Red_PORT.OUTCLR = LED_Red_PIN_bm;
 			
 			if (KCK_DSH_SW)//bazi vaghta begir nagir dare
 			{
@@ -348,7 +356,11 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 			  Robot_D[RobotID].M2b  = motor[2][0] & 0x0ff;//Buf_Rx_L[6+ RobotID%3 * 10];
 			  Robot_D[RobotID].M3a  = (motor[3][0] >> 8) & 0x0ff;//Buf_Rx_L[7+ RobotID%3 * 10];
 			  Robot_D[RobotID].M3b  = motor[3][0] & 0x0ff;//Buf_Rx_L[8+ RobotID%3 * 10];
-			  Robot_D[RobotID].KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
+			  if ( abs(degree_err)<=1 )
+			  Robot_D[RobotID].KCK  = 100;
+			  else
+			  Robot_D[RobotID].KCK  = 0;
+			  //Robot_D[RobotID].KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
 			  Robot_D[RobotID].CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			  Robot_D[RobotID].ASK  = Buf_Rx_L[31];//0b00000000
 			  
@@ -409,20 +421,22 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	  }
 }
 
+ISR(TCE0_OVF_vect)//100us
+{
+	t_100us++;
+}
+
+
 char timectrl;//,time2sec;
 ISR(TCE1_OVF_vect)//1ms
 {
-	//if (time_test<=10)
-	//{
-		//time_test++;
-		//wdt_reset_mcu();
-	//}
+	
 	t_1ms++;
-if (time_test<5)
-{
-	time_test++;
-	if(time_test==2) flg_test=1;
-}
+	if (time_test<5)
+	{
+		time_test++;
+		if(time_test==2) flg_test=1;
+	}
 	
 	
 	wireless_reset++;
