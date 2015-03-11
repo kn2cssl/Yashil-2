@@ -70,7 +70,7 @@ void TimerD0_init(void)
 	tc_write_cc(&TCD0, TC_CCA, 0x05);//05
 	tc_set_direction(&TCD0,TC_UP);
 	//tc_enable_cc_channels(&TCD0,TC_CCAEN);
-	//tc_enable(&TCD0);
+	tc_enable(&TCD0);
 };
 
 void TimerC0_init(void) //KICK_DIR -> OC0D(PORTC3) //SHG_PULSE -> OC0C(PORTC2)
@@ -81,7 +81,7 @@ void TimerC0_init(void) //KICK_DIR -> OC0D(PORTC3) //SHG_PULSE -> OC0C(PORTC2)
     tc_set_direction(&TCC0,TC_UP);
     tc_enable_cc_channels(&TCC0,TC_CCCEN);
     tc_enable_cc_channels(&TCC0,TC_CCDEN);
-    tc_enable(&TCC0);
+    //tc_enable(&TCC0);
 	tc_write_cc(&TCC0,TC_CCC,0x5D);
 };
 void TimerC1_init(void) // KICK_CHIP -> OC1A (PORTC4)
@@ -91,7 +91,7 @@ void TimerC1_init(void) // KICK_CHIP -> OC1A (PORTC4)
 	tc_write_period(&TCC1,0x77);
 	tc_set_direction(&TCC1,TC_UP);
 	//tc_enable_cc_channels(&TCC1,TC_CCAEN);
-	tc_enable(&TCC1);
+	//tc_enable(&TCC1);
 	//tc_write_cc(&TCC1,TC_CCA,0x5D);
 }
 #define TIMERE1_PER 0x7C // per=0xD7,DIV256 => 1.728ms  // per=0x7c,DIV256 => 1ms
@@ -105,10 +105,10 @@ void TimerE1_init(void)
     tc_enable(&TCE1);
 };
  
-#define TIMERE0_PER 0xF9 //per=0x18F,DIV8 => 100us
+#define TIMERE0_PER 0x18F //per=0x18F,DIV8 => 100us
 void TimerE0_init(void)
 {
-	tc_write_clock_source(&TCE0,TC_CLKSEL_DIV64_gc);
+	tc_write_clock_source(&TCE0,TC_CLKSEL_DIV8_gc);
 	tc_set_wgm(&TCE0,TC_WG_NORMAL);
 	tc_set_overflow_interrupt_level(&TCE0,TC_INT_LVL_MED);
 	tc_write_period(&TCE0,TIMERE0_PER);

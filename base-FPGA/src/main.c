@@ -36,7 +36,7 @@
 
 ///////////////////////////////////////////////////////////////gyro defines
 #define CPU_SPEED       32000000
-#define BAUDRATE	    500000 //100000
+#define BAUDRATE	    172000 //100000
 #define TWI_BAUDSETTING TWI_BAUD(CPU_SPEED, BAUDRATE)
 #define ROBOTRADIUS 0.090
 #define SpeedToRPM 1375.14
@@ -45,16 +45,15 @@
 
 long int yaw_speed=0,yaw_rot=0;
 float gyro_degree=0;
-float degree,degree_last;
+float degree,degree_last,gyro_err;
 int icounter=0;
-int degree_err=0;
+float degree_err=0,degree_err_last=0;
 
-uint16_t t_1ms=0,t_100us=0,t_gyro=0,t_gyro_last=0,dt;
+uint16_t t_1ms=0,t_100us=0,t_gyro=0,t_gyro_last=0,t_mpu_init=0,dt;
 char buff_offset[320];
 int offset=0;
-
-float kp_gyro=0,ki_gyro=0,kd_gyro=0;
-float Angl_setpoint=0,Angl_Err,Angl_i,Angl_d,Angl_PID;
+int flg_mpu_init=0,flg_gyro=0;
+float Angl_setpoint=50.0,Angl_Err,Angl_i=0,Angl_d=0,Angl_p=0,Ang_derived,Angl_derived,Angl_PID;
 //////////////////////////////////////////////////////////////////////////
 void NRF_init (void) ;
 void data_transmission (void);
@@ -141,13 +140,13 @@ int main (void)
 	while(1)
 	{  
 		    asm("wdr");
-			if (flg_test)
+			if (flg_mpu_init)
 			{
 				mpu6050_init();
-				time_test=0;
+				t_mpu_init=0;
 			}
-			flg_test=0;
-			if(time_test>=5)
+			flg_mpu_init=0;
+			if(t_mpu_init>=5)
 			{////////////////////////////////////////////////////   calculating the offset of gyro
 			//offset=0;
 			//for (int i=0;i<200;i++)
@@ -165,14 +164,14 @@ int main (void)
 			degree_last = gyro_degree;
 			yaw_speed=read_mpu();
 			
-			t_gyro_last=t_gyro;
-			t_gyro=t_1ms;
-			dt = (t_gyro-t_gyro_last);
 			//t_gyro_last=t_gyro;
-			//t_gyro=t_100us;
-			//dt = (t_gyro-t_gyro_last)*2.0;
+			//t_gyro=t_1ms;
+			//dt = (t_gyro-t_gyro_last);
+			t_gyro_last=t_gyro;
+			t_gyro=t_100us;
+			dt = (t_gyro-t_gyro_last);  ////barhasbe 100us
 			
-			yaw_rot -= (dt*yaw_speed);
+			yaw_rot -= ((dt*yaw_speed));
 			
 			if (icounter<6)
 			{
@@ -180,7 +179,7 @@ int main (void)
 				icounter++;
 			}
 			
-			gyro_degree=yaw_rot/1000;
+			gyro_degree= (float)(yaw_rot/10000);
 
 			if (gyro_degree>=180)
 			{
@@ -193,6 +192,7 @@ int main (void)
 			
 			degree = gyro_degree;
 			degree = degree_last + 0.2*(degree - degree_last) ;
+			gyro_err = degree - degree_last ;  
 			
 			Test_Data[0] = degree;
 			Test_Data[1] = (int)(Angl_setpoint);
@@ -206,20 +206,42 @@ int main (void)
 			//}
 			This_Robot.L_spead_x = 0;//(( ((Robot_D[RobotID].LinearSpeed_x0<<8) & 0xff00) | (Robot_D[RobotID].LinearSpeed_x1 & 0x00ff) ));
 			This_Robot.L_spead_y = 0;//(( ((Robot_D[RobotID].LinearSpeed_y0<<8) & 0xff00) | (Robot_D[RobotID].LinearSpeed_y1 & 0x00ff) ));
-			This_Robot.angel_setpoint = 15.0;//(float)Robot_D[RobotID].CHP;//(( ((Robot_D[RobotID].M0a<<8) & 0xff00) | (Robot_D[RobotID].M0b & 0x00ff) ));//
+			This_Robot.angel_setpoint = 50.0;//(float)Robot_D[RobotID].CHP;//(( ((Robot_D[RobotID].M0a<<8) & 0xff00) | (Robot_D[RobotID].M0b & 0x00ff) ));//
 						
-			if (Angl_setpoint == This_Robot.angel_setpoint)
+			//if (Angl_setpoint == This_Robot.angel_setpoint)
 			This_Robot.dir = gyro_degree;
-			else
-			{
-				This_Robot.dir=0;
-				gyro_degree=0;
-				Angl_setpoint = This_Robot.angel_setpoint;
-			}
+			//else
+			//{
+				//This_Robot.dir=0;
+				//gyro_degree=0;
+				//Angl_setpoint = This_Robot.angel_setpoint;
+			//}
+				degree_err_last = degree_err ;
 				degree_err= Angl_setpoint-This_Robot.dir;
-				if (degree_err >=2)
+				degree_err = degree_err_last + (0.1* (degree_err-degree_err_last));
+				
+				Angl_i=0.00;
+				Angl_p=0;
+				Angl_d=0;
+				if (Abs(degree_err)<17.0)
 				{
-					This_Robot.R_spead = ((Angl_setpoint-This_Robot.dir)*7.5);
+					Angl_i=0;
+					Angl_p=1.0;
+					Angl_d=0.004;
+				}
+				Angl_integral = Angl_integral + (degree_err*dt)/10000;
+				Ang_derived = Angl_d * (gyro_err * (1/dt)) ;
+				Angl_PID = Angl_p*degree_err + Angl_integral
+					//if (abs(degree_err)>=8)
+					//{
+						Angl_p=(degree_err/10.0);
+						This_Robot.R_spead = ((degree_err)*Angl_p);
+					//}
+					//else
+					//{
+						//This_Robot.R_spead = ((Angl_setpoint-This_Robot.dir)*2.5);//-(0.2*degree_err*10000/dt);
+						
+					//}
 				}
 				else
 				{
@@ -432,11 +454,17 @@ ISR(TCE1_OVF_vect)//1ms
 {
 	
 	t_1ms++;
-	if (time_test<5)
+	if (t_mpu_init<5)
 	{
-		time_test++;
-		if(time_test==2) flg_test=1;
+		t_mpu_init++;
+		if(t_mpu_init==2) flg_mpu_init=1;
 	}
+	//time_test++;
+	//if (time_test>=2000)
+	//{
+		//Angl_setpoint = -(Angl_setpoint);
+		//time_test=0;
+	//}
 	
 	
 	wireless_reset++;
