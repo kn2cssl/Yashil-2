@@ -119,15 +119,15 @@ int main (void)
 			{
 				if (Robot_D[RobotID].KCK )
 				{
-					if(KCK_Sens)
+					if( KCK_Sens || (Robot_D[RobotID].KCK%2))
 					{
 					flg_dir = 1;	
 					}
 					
 				}
-				if (Robot_D[RobotID].CHP )
+				if (Robot_D[RobotID].CHP)
 				{
-					if(KCK_Sens)
+					if(KCK_Sens || (Robot_D[RobotID].CHP%2))
 					{
 					flg_chip = 1;	
 					}
@@ -458,11 +458,11 @@ ISR(TCE1_OVF_vect)//1ms
 		timectrl=0;
 	}
 	time2sec++;
-	if (time2sec>=10)
-	{
-		flag2sec++;
-		time2sec=0;
-	}
+	//if (time2sec>=10)
+	//{
+		//flag2sec++;
+		//time2sec=0;
+	//}
 	if ((flg_dir & flg_chip)==1)
 	{
 	flg_dir = 1;
