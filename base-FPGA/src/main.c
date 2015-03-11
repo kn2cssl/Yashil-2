@@ -91,10 +91,14 @@ int main (void)
 	  {  
 		    asm("wdr");
 			//////////////////////////////////////////////////////// motor current sensor
-			adc_cur_M1 = adc_get_unsigned_result(&ADCA,ADC_CH1);
+			adc_cur_M1 = adc_get_unsigned_result(&ADCB,ADC_CH0);
+			adc_cur_M2 = adc_get_unsigned_result(&ADCB,ADC_CH1);
+			adc_cur_M3 = adc_get_unsigned_result(&ADCA,ADC_CH1);
+			adc_cur_M4 = adc_get_unsigned_result(&ADCA,ADC_CH2);
+			
 			//SEND TEST DATA TO FT232
 			char str1[20];
-			uint8_t count1 = sprintf(str1,"%d\r",(int)adc_cur_M1);
+			uint8_t count1 = sprintf(str1,"%d,%d\r",(int)adc_cur_M3,(int)adc_cur_M4);
 			
 			for (uint8_t i=0;i<count1;i++)
 			{
