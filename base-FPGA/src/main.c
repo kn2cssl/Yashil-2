@@ -44,7 +44,18 @@ int motor_num=0,test=0;
 uint32_t kck_time_dir,time_test,kck_time_chip;
 int free_wheel=0;
 int wireless_reset=0;
-int adc =0,adc_cur_M1,adc_cur_M2,adc_cur_M3,adc_cur_M4;
+////////////////////////////////////////current defines
+int adc_M1,adc_M2,adc_M3,adc_M4;
+float vol_M1,vol_M2,vol_M3,vol_M4,vol_M1_l,vol_M2_l,vol_M3_l,vol_M4_l;
+float cur_M1,cur_M2,cur_M3,cur_M4;
+
+unsigned int adc,adc_last;
+//float vol,vol_last,cur,cur_last;
+//float adc_I,adc_I_last;
+//
+//char buff_offset[320];
+//int adc_offset=0;
+//////////////////////////////////////////////
 int flg_dir=0, flg_chip=0;
 int Robot_Select,Robot_Select_Last;
 int Test_Data[8];
@@ -91,14 +102,65 @@ int main (void)
 	  {  
 		    asm("wdr");
 			//////////////////////////////////////////////////////// motor current sensor
-			adc_cur_M1 = adc_get_unsigned_result(&ADCB,ADC_CH0);
+			
+			//adc_I_last=adc_I;
+			vol_M1_l = vol_M1;
+			adc_M1 = (adc_get_unsigned_result(&ADCB,ADC_CH0));
+			adc_M2 = (adc_get_unsigned_result(&ADCB,ADC_CH1));
+			adc_M3 = (adc_get_unsigned_result(&ADCA,ADC_CH1));
+			//adc_M4 = (adc_get_unsigned_result(&ADCA,ADC_CH2));
+			
+			vol_M1= ((float)adc_M1)*0.86;    //voltage khorujie sensor jaryan barhasbe milivolt   (3.3*1000/4096)/0.937   0.937 factore taghsim voltage
+			vol_M2= ((float)adc_M2)*0.86;
+			vol_M3= ((float)adc_M3)*0.86;
+			
+			vol_M1 = vol_M1_l + (0.02*(float)(vol_M1-vol_M1_l));
+			vol_M2 = vol_M1_l + (0.02*(float)(vol_M1-vol_M1_l));
+			vol_M3 = vol_M1_l + (0.02*(float)(vol_M1-vol_M1_l));
+			
+			cur_M1 = (vol_M1-2970.0)*5.33;
+			if (cur_M1<5)
+			{
+				cur_M1=0;
+			}
+			cur_M2 = (vol_M2-2970.0)*5.33;
+			if (cur_M2<5)
+			{
+				cur_M2=0;
+			}
+			cur_M3 = (vol_M3-2970.0)*5.33;
+			if (cur_M3<5)
+			{
+				cur_M3=0;
+			}
+			
+			//cur = ((float)adc)*4.3;  // bar hasbe mA ---> be ezaye har 0.1875mv 1mA taghire jaryan darim!
+			
+			//adc = adc_last + (0.2*(float)(adc-adc_last));
+			 
+			
+			//adc_I=adc*8.65;//*34.732;	
+			//adc_I = adc_I_1 + /*((0.01/(f+0.01))*/ (0.02*(float)(adc_I-adc_I_1));
+			
+			
+			//////////////////////////////////////////////////   calculating the offset of gyro
+			//adc_offset=0;
+			//for (int i=0;i<200;i++)
+			//{
+				//adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
+				//buff_offset[i]=adc_get_unsigned_result(&ADCA,ADC_CH0)-1985;
+				//adc_offset += buff_offset[i];
+			
+			//}
+			//adc_offset = adc_offset/200;
+			//adc_cur_M1 = adc_get_unsigned_result(&ADCB,ADC_CH0);
 			//adc_cur_M2 = adc_get_unsigned_result(&ADCB,ADC_CH1);
 			//adc_cur_M3 = adc_get_unsigned_result(&ADCA,ADC_CH1);
 			//adc_cur_M4 = adc_get_unsigned_result(&ADCA,ADC_CH2);
 			
 			//SEND TEST DATA TO FT232
 			char str1[20];
-			uint8_t count1 = sprintf(str1,"%d\r",(int)adc_cur_M1);
+			uint8_t count1 = sprintf(str1,"%d,%d,%d\r",(int)cur_M1,(int)cur_M2,(int)cur_M3);
 			
 			for (uint8_t i=0;i<count1;i++)
 			{
@@ -107,10 +169,12 @@ int main (void)
 			/////////////////////////////////////////////////////////
 			
 			
-		   // BUZZER 
+		    //BUZZER
+			adc_last = adc;
 		    adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
-		   //adc = 1200;
-		    if (adc<=2250)//10 volt battery voltage feedback
+			adc = adc_last + (0.02*(float)(adc-adc_last));
+		   adc = 1200;
+		    if (adc<=2250 && adc>=1250)//10 volt battery voltage feedback
 		    {
 			    Buzzer_PORT.OUTSET = Buzzer_PIN_bm;
 		    }
@@ -161,10 +225,10 @@ int main (void)
 				//}
 			}
 			
-			if (free_wheel >= 500 )
-			{
-				NRF_init();
-			}
+			//if (free_wheel >= 500 )
+			//{
+				//NRF_init();
+			//}
 			if(KCK_Sens)
 			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
 			else
@@ -358,14 +422,16 @@ int main (void)
 				    //
 			    //}
 		////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
-		  //Robot_D[RobotID].M0b  = 0xD0;//0X18;//-1000//01;//low37121
-		  //Robot_D[RobotID].M0a  = 0x07;//0XFC;//high
-		  //Robot_D[RobotID].M1b  = 0XE8;//2000//ghalat17325
-		  //Robot_D[RobotID].M1a  = 0X03;
-		  //Robot_D[RobotID].M2b  = 0XDC;//1000//low13703
-		  //Robot_D[RobotID].M2a  = 0X05;//high
-		  //Robot_D[RobotID].M3b  = 0xF4;//3000//32;//ghalat30258
-		  //Robot_D[RobotID].M3a  = 0X01;//76;
+		 Robot_D[RobotID].M0b  = 0xE8;//low
+		 Robot_D[RobotID].M0a  = 0X03;//high
+		 Robot_D[RobotID].M1b  = 0x0;//low
+		 Robot_D[RobotID].M1a  = 0X00;//high
+		  Robot_D[RobotID].M1b  = 0X00;//2000//ghalat17325
+		  Robot_D[RobotID].M1a  = 0X00;
+		  Robot_D[RobotID].M2b  = 0X0;//1000//low13703
+		  Robot_D[RobotID].M2a  = 0X0;//high
+		  Robot_D[RobotID].M3b  = 0x0;//3000//32;//ghalat30258
+		  Robot_D[RobotID].M3a  = 0X0;//76;
 		  
 			////SEND TEST DATA TO FT232
 			//char str1[20];
@@ -394,14 +460,14 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		  {
 			  LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			  Robot_D[RobotID].RID  = Buf_Rx_L[0];
-			  Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
-			  Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
-			  Robot_D[RobotID].M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
-			  Robot_D[RobotID].M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
-			  Robot_D[RobotID].M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
-			  Robot_D[RobotID].M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
-			  Robot_D[RobotID].M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
-			  Robot_D[RobotID].M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
 			  Robot_D[RobotID].KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
 			  Robot_D[RobotID].CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			  Robot_D[RobotID].ASK  = Buf_Rx_L[31];//0b00000000
