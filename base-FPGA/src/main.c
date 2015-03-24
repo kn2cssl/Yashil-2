@@ -717,6 +717,8 @@ void NRF_init (void)
 	NRF24L01_L_Init_milad(_RX_MODE, _CH_1, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
 	else if(RobotID > 2 && RobotID < 6)
 	NRF24L01_L_Init_milad(_RX_MODE, _CH_0, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
+	else if(RobotID > 5 && RobotID < 10)
+	NRF24L01_L_Init_milad(_RX_MODE, _CH_2, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
 	NRF24L01_L_WriteReg(W_REGISTER | DYNPD,0x01);
 	NRF24L01_L_WriteReg(W_REGISTER | FEATURE,0x06);
 
