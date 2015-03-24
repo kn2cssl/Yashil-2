@@ -44,7 +44,7 @@ int motor_num=0,test=0;
 uint32_t kck_time_dir,time_test,kck_time_chip;
 int free_wheel=0;
 int wireless_reset=0;
-int adc =0;
+float adc =0;
 int flg_dir=0, flg_chip=0;
 int Robot_Select,Robot_Select_Last;
 int Test_Data[8];
@@ -90,7 +90,7 @@ int main (void)
 	  {  
 		    asm("wdr");
 		   // BUZZER 
-		    adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
+		    adc = adc +(adc_get_unsigned_result(&ADCA,ADC_CH0)-adc)*0.01;
 		   //adc = 1200;
 		    if (adc<=2250)//10 volt battery voltage feedback
 		    {
@@ -151,214 +151,7 @@ int main (void)
 			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
 			else
 			 LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
-		 ////Micro to FPGA communication test number 1 (comment the data packet received from wireless)
-		   //switch(flag2sec)//time2sec)//flag2sec
-			  //{ case 200:
-			   //// M.Setpoint=1000;
-			   //Robot_D[RobotID].M0b  = 0xE8;//low
-			   //Robot_D[RobotID].M0a  = 0X03;//high
-			   //break;
-			   //
-			   //case 400:
-			   ////M.Setpoint=2000;
-			   //Robot_D[RobotID].M0b  = 0xD0;//low
-			   //Robot_D[RobotID].M0a  = 0X07;//high
-			   //break;
-			   //
-			   //case 600:
-			   ////M.Setpoint=500;
-			   //Robot_D[RobotID].M0b  = 0xF4;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 800:
-			   ////M.Setpoint=4000;
-			   //Robot_D[RobotID].M0b  = 0xA0;//low
-			   //Robot_D[RobotID].M0a  = 0X0F;//high
-			   //break;
-			   //
-			   //case 1000:
-			   ////M.Setpoint=1000;
-			   //Robot_D[RobotID].M0b  = 0xE8;//low
-			   //Robot_D[RobotID].M0a  = 0X03;//high
-			   //break;
-			   //
-			   //case 1200:
-			   ////M.Setpoint=500;
-			   //Robot_D[RobotID].M0b  = 0xF4;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 1400:
-			   ////M.Setpoint=-500;
-			   //Robot_D[RobotID].M0b  = 0x0C;//low
-			   //Robot_D[RobotID].M0a  = 0XFE;//high
-			   //break;
-			   //
-			   //case 1600:
-			   ////M.Setpoint=400;
-			   //Robot_D[RobotID].M0b  = 0x90;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 1800:
-			   ////M.Setpoint=350;
-			   //Robot_D[RobotID].M0b  = 0x5E;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 2000:
-			   ////M.Setpoint=340;
-			   //Robot_D[RobotID].M0b  = 0x54;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 2200:
-			   ////M.Setpoint=330;
-			   //Robot_D[RobotID].M0b  = 0x4A;//low
-			   //Robot_D[RobotID].M0a  = 0X01;//high
-			   //break;
-			   //
-			   //case 2400:
-			   ////M.Setpoint=100;
-			   //Robot_D[RobotID].M0b  = 0x64;//low
-			   //Robot_D[RobotID].M0a  = 0X00;//high
-			   //break;
-			   //
-			   //case 2600:
-			   ////M.Setpoint=50;
-			   //Robot_D[RobotID].M0b  = 0x32;//low
-			   //Robot_D[RobotID].M0a  = 0X00;//high
-			   //break;
-			   //
-			   //case 2800:
-			   ////M.Setpoint=1000;
-			   //Robot_D[RobotID].M0b  = 0xE8;//low
-			   //Robot_D[RobotID].M0a  = 0X03;//high
-			   //break;
-			   //
-			   //case 3000:
-			   ////M.Setpoint=-50;
-			   //Robot_D[RobotID].M0b  = 0xCE;//low
-			   //Robot_D[RobotID].M0a  = 0XFF;//high
-			   //flag2sec=0;
-			  //// time2sec=0;
-			   //break;
-			   //}
-			    //switch(time2sec)//flag2sec
-			    //{   case 10:
-				    //// M.Setpoint=1000;
-				    //Robot_D[RobotID].M0b  = 0xE8;//low
-				    //Robot_D[RobotID].M0a  = 0X03;//high
-				    //break;
-				    //
-				    //case 20:
-				    ////M.Setpoint=2000;
-				    //Robot_D[RobotID].M0b  = 0xD0;//low
-				    //Robot_D[RobotID].M0a  = 0X07;//high
-				    //break;
-				    //
-				    //case 30:
-				    ////M.Setpoint=500;
-				    //Robot_D[RobotID].M0b  = 0xF4;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 40:
-				    ////M.Setpoint=4000;
-				    //Robot_D[RobotID].M0b  = 0xA0;//low
-				    //Robot_D[RobotID].M0a  = 0X0F;//high
-				    //break;
-				    //
-				    //case 50:
-				    ////M.Setpoint=1000;
-				    //Robot_D[RobotID].M0b  = 0xE8;//low
-				    //Robot_D[RobotID].M0a  = 0X03;//high
-				    //break;
-				    //
-				    //case 60:
-				    ////M.Setpoint=500;
-				    //Robot_D[RobotID].M0b  = 0xF4;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 70:
-				    ////M.Setpoint=-500;
-				    //Robot_D[RobotID].M0b  = 0x0C;//low
-				    //Robot_D[RobotID].M0a  = 0XFE;//high
-				    //break;
-				    //
-				    //case 80:
-				    ////M.Setpoint=400;
-				    //Robot_D[RobotID].M0b  = 0x90;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 90:
-				    ////M.Setpoint=350;
-				    //Robot_D[RobotID].M0b  = 0x5E;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 100:
-				    ////M.Setpoint=340;
-				    //Robot_D[RobotID].M0b  = 0x54;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 110:
-				    ////M.Setpoint=330;
-				    //Robot_D[RobotID].M0b  = 0x4A;//low
-				    //Robot_D[RobotID].M0a  = 0X01;//high
-				    //break;
-				    //
-				    //case 120:
-				    ////M.Setpoint=100;
-				    //Robot_D[RobotID].M0b  = 0x64;//low
-				    //Robot_D[RobotID].M0a  = 0X00;//high
-				    //break;
-				    //
-				    //case 130:
-				    ////M.Setpoint=50;
-				    //Robot_D[RobotID].M0b  = 0x32;//low
-				    //Robot_D[RobotID].M0a  = 0X00;//high
-				    //break;
-				    //
-				    //case 140:
-				    ////M.Setpoint=1000;
-				    //Robot_D[RobotID].M0b  = 0xE8;//low
-				    //Robot_D[RobotID].M0a  = 0X03;//high
-				    //break;
-				    //
-				    //case 150:
-				    ////M.Setpoint=-50;
-				    //Robot_D[RobotID].M0b  = 0xCE;//low
-				    //Robot_D[RobotID].M0a  = 0XFF;//high
-				    ////flag2sec=0;
-				     //time2sec=0;
-				    //break;
-				    //
-			    //}
-		////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
-		  //Robot_D[RobotID].M0b  = 0xD0;//0X18;//-1000//01;//low37121
-		  //Robot_D[RobotID].M0a  = 0x07;//0XFC;//high
-		  //Robot_D[RobotID].M1b  = 0XE8;//2000//ghalat17325
-		  //Robot_D[RobotID].M1a  = 0X03;
-		  //Robot_D[RobotID].M2b  = 0XDC;//1000//low13703
-		  //Robot_D[RobotID].M2a  = 0X05;//high
-		  //Robot_D[RobotID].M3b  = 0xF4;//3000//32;//ghalat30258
-		  //Robot_D[RobotID].M3a  = 0X01;//76;
-		  
-			////SEND TEST DATA TO FT232
-			//char str1[20];
-		    //uint8_t count1 = sprintf(str1,"%d,%d,%d,%d\r",FPGA_DATA_PORT.IN,MOTORNUM_PORT.IN,((PARITY_PORT.IN & PARITY_bm)>>PARITY_bp),((CLK_par_PORT.IN & CLK_par_bm)>>CLK_par_bp));
-			//
-			//for (uint8_t i=0;i<count1;i++)
-			//{
-				//usart_putchar(&USARTE0,str1[i]);
-				//
-			//}
-			//usart_putchar(&USARTE0,'a');
+
 	  }
 }
 
@@ -388,26 +181,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 			  Robot_D[RobotID].CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			  Robot_D[RobotID].ASK  = Buf_Rx_L[31];//0b00000000
 			  
-			  //if (rpm_ready[0].data_permit)
-			  //{
-				  //rpm_ready[0].Ma = Robot_D[RobotID].M0a;
-				  //rpm_ready[0].Mb = Robot_D[RobotID].M0b;
-			  //}
-			  //if (rpm_ready[1].data_permit)
-			  //{
-				  //rpm_ready[1].Ma = Robot_D[RobotID].M1a;
-				  //rpm_ready[1].Mb = Robot_D[RobotID].M1b;
-			  //}
-			  //if (rpm_ready[2].data_permit)
-			  //{
-				  //rpm_ready[2].Ma = Robot_D[RobotID].M2a;
-				  //rpm_ready[2].Mb = Robot_D[RobotID].M2b;
-			  //}
-			  //if (rpm_ready[3].data_permit)
-			  //{
-				  //rpm_ready[3].Ma = Robot_D[RobotID].M3a;
-				  //rpm_ready[3].Mb = Robot_D[RobotID].M3b;
-			  //}
+
 			  
 			  if (Robot_D[RobotID].ASK != Robot_Select)
 			  {
@@ -729,11 +503,13 @@ void NRF_init (void)
 void data_transmission (void)
 {
 	//transmitting data to wireless board/////////////////////////////////////////////////
-	 		Test_Data[0] = adc/12;
+	 		Test_Data[0] = adc;
 	 		Test_Data[1] = time_test;
+			Test_Data[7] = adc*0.4761;//battery voltage
+			
 	
-	Buf_Tx_L[0]  = Robot_D[RobotID].M0a;//(Test_Data[0]>> 8) & 0xFF;	//drive test data
-	Buf_Tx_L[1]  = Robot_D[RobotID].M0b;//Test_Data[0] & 0xFF;			//drive test data
+	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;	//drive test data
+	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;			//drive test data
 	Buf_Tx_L[2]  = Robot_D[RobotID].M1a;//(Test_Data[1]>> 8) & 0xFF;	//drive test data
 	Buf_Tx_L[3]  = Robot_D[RobotID].M1b;//Test_Data[1] & 0xFF;			//drive test data
 	Buf_Tx_L[4]  = Robot_D[RobotID].M2a;//(Test_Data[2]>> 8) & 0xFF;	//drive test data
@@ -746,9 +522,9 @@ void data_transmission (void)
 	//Buf_Tx_L[11] = Test_Data[5] & 0xFF;			// unused
 	//Buf_Tx_L[12] = (Test_Data[6]>> 8) & 0xFF;	// unused
 	//Buf_Tx_L[13] = Test_Data[6] & 0xFF;			// unused
-	//Buf_Tx_L[14] = (Test_Data[7]>> 8) & 0xFF;	// unused
-	//Buf_Tx_L[15] = Test_Data[7] & 0xFF;			// unused
-	Buf_Tx_L[16] = adc/12;						//battery voltage
+	Buf_Tx_L[14] = (Test_Data[7]>> 8) & 0xFF;	// battery voltage
+	Buf_Tx_L[15] = Test_Data[7] & 0xFF;			// battery voltage
+	Buf_Tx_L[16] = adc/12;						//battery adc
 	
 
 	//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
