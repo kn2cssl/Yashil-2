@@ -12,7 +12,7 @@
 
 #define ON 1
 #define OFF 0
-//ID1 ID0 ID3 ID2
+ //ID1 ID0 ID3 ID2
 #define RobotID ((((PORTB_IN & PIN5_bm) >> PIN5_bp) << 0)|(((PORTA_IN & PIN7_bm) >> PIN7_bp) << 1)|(((PORTB_IN & PIN6_bm) >> PIN6_bp) << 2)|(((PORTB_IN & PIN4_bm) >> PIN4_bp) << 3))     
 //FPGA DATA
 #define CLK_par_bm PIN1_bm 
