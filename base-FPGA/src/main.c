@@ -131,7 +131,6 @@ int main (void)
 					{
 					flg_chip = 1;	
 					}
-					
 				}
 			}
 			if (KCK_DSH_SW)
@@ -209,7 +208,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	  }
 	  if((status_L&_TX_DS) == _TX_DS)
 	  {
-		  //LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		  LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 		  wireless_reset=0;
 	  }
 	  
@@ -226,6 +225,12 @@ ISR(TCE1_OVF_vect)//1ms
 	timectrl++;
 	wireless_reset++;
 	free_wheel++;
+	if(wireless_reset>=20)
+	{
+		NRF_init();
+		wireless_reset=0;
+		//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+	}
 	if (timectrl>=32) 
 	{
 		ctrlflg=1;
