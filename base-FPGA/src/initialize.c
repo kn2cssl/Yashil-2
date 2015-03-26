@@ -79,7 +79,7 @@ void TimerC0_init(void) //KICK_DIR -> OC0D(PORTC3) //SHG_PULSE -> OC0C(PORTC2)
     tc_set_wgm(&TCC0,TC_WG_SS);
     tc_write_period(&TCC0,0x77);//0x01DFF
     tc_set_direction(&TCC0,TC_UP);
-    tc_enable_cc_channels(&TCC0,TC_CCCEN);
+    //tc_enable_cc_channels(&TCC0,TC_CCCEN);
     tc_enable_cc_channels(&TCC0,TC_CCDEN);
     tc_enable(&TCC0);
 	tc_write_cc(&TCC0,TC_CCC,0x5D);
