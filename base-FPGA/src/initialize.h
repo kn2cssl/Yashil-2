@@ -36,7 +36,9 @@
 //FPGA SPI//////////	PORTE
 #define MOSI_CUR1_bm PIN5_bm
 #define MISO_CUR1_bm PIN6_bm
-#define SCK_CUR1_bm  PIN7_bm
+//#define SCK_CUR1_bm  PIN7_bm
+#define STARTBIT_bm  PIN7_bm
+#define STARTBIT_PORT  PORTE
 //IR
 #define KCK_Sens_PORT PORTD
 #define KCK_Sens_PIN_bm		PIN1_bm

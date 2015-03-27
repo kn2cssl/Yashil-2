@@ -37,7 +37,7 @@ void PORT_init(void)
 	PORTD_INTCTRL = PORT_INT0LVL_LO_gc;
 	PORTD_INT0MASK = PIN2_bm;
 	
-	PORTE_DIRSET = SCK_CUR1_bm | MOSI_CUR1_bm | Buzzer_PIN_bm | TX_Data_PIN_bm | LED_Green_PIN_bm | LED_White_PIN_bm | LED_Red_PIN_bm;
+	PORTE_DIRSET = STARTBIT_bm | MOSI_CUR1_bm | Buzzer_PIN_bm | TX_Data_PIN_bm | LED_Green_PIN_bm | LED_White_PIN_bm | LED_Red_PIN_bm;
 	//PORTE.OUTSET = PIN3_bm;//TX pin on PORTE
 	
 	PORTF_DIRSET = FPGA_DATA0_bm | FPGA_DATA1_bm | FPGA_DATA2_bm | FPGA_DATA3_bm | FPGA_DATA4_bm | FPGA_DATA5_bm | FPGA_DATA6_bm | FPGA_DATA7_bm; 

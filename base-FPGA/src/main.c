@@ -141,7 +141,15 @@ int main (void)
  					flg_dir = 1;
 // 				}
 			}
-			
+			////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
+			Robot_D[RobotID].M0b  = 0xD0;//0X18;//-1000//01;//low37121
+			Robot_D[RobotID].M0a  = 0x07;//0XFC;//high
+			//Robot_D[RobotID].M1b  = 0XE8;//2000//ghalat17325
+			//Robot_D[RobotID].M1a  = 0X03;
+			//Robot_D[RobotID].M2b  = 0XDC;//1000//low13703
+			//Robot_D[RobotID].M2a  = 0X05;//high
+			//Robot_D[RobotID].M3b  = 0xF4;//3000//32;//ghalat30258
+			//Robot_D[RobotID].M3a  = 0X01;//76;
 			if (free_wheel >= 500 )
 			{
 				NRF_init();
@@ -168,8 +176,8 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		  {
 			  LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			  Robot_D[RobotID].RID  = Buf_Rx_L[0];
-			  Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
-			  Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
+			  //Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
 			  Robot_D[RobotID].M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
 			  Robot_D[RobotID].M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
 			  Robot_D[RobotID].M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
@@ -348,124 +356,162 @@ ISR(TCD0_CCA_vect)
 	switch (motor_num)
 	{
 		case 0 :
+		MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
+		if(((CLK_par_PORT.IN && CLK_par_bm)))
+		{
+			FPGA_DATA_PORT.OUT = 0xAA;//low byte
+			PARITY_PORT.OUTCLR = PARITY_bm;
+			STARTBIT_PORT.OUTSET = STARTBIT_bm;
+			motor_num++;
+			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
+		}
+		break;
+		case 1:
+		{
+			motor_num++;
+		}
+		break;
+		case 2 :
+		MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
+		if(((CLK_par_PORT.IN && CLK_par_bm)))
+		{
+			FPGA_DATA_PORT.OUT = 0x55;
+			PARITY_PORT.OUTSET = PARITY_bm;
+			STARTBIT_PORT.OUTSET = STARTBIT_bm;
+			motor_num++;
+			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
+		}
+		break;
+		case 3:
+		{
+			motor_num++;
+		}
+		break;
+		case 4 :
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0b;//low byte
 			PARITY_PORT.OUTCLR = PARITY_bm;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
 			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
 			}
 		break;
-		case 1:
+		case 5:
 		     {
 				 motor_num++;
 			 }
 		break;
-		case 2 :
+		case 6 :
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0a;
 			PARITY_PORT.OUTSET = PARITY_bm;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
 			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
 			}
 		break;
-		case 3:
+		case 7:
 			{
 			motor_num++;
 			}
 			break;
-		case 4 :
+		case 8 :
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1b;
-			rpm_ready[0].data_permit=1;
-			rpm_ready[1].data_permit=0;
 			PARITY_PORT.OUTCLR = PARITY_bm;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
 			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
 			}
 			break;
-		case 5:
+		case 9:
 			{
 			motor_num++;
 			}
 		    break;
-		case 6 :
+		case 10 :
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1a;
 			PARITY_PORT.OUTSET = PARITY_bm;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
 			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
-			}
-			break;
-		case 7:
-			{
-			motor_num++;
-			}
-		    break;
-		case 8 :
-			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
-			{
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2b;
-				PARITY_PORT.OUTCLR = PARITY_bm;
-				motor_num++;
-				//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
-			}
-		    break;
-		case 9:
-			{
-				motor_num++;
-			}
-			break;
-		case 10 :
-			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
-			{
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2a;
-				PARITY_PORT.OUTSET = PARITY_bm;
-				motor_num++;
-				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
 			}
 			break;
 		case 11:
 			{
 			motor_num++;
 			}
-			break;
+		    break;
 		case 12 :
-			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
+			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3b;
+				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2b;
 				PARITY_PORT.OUTCLR = PARITY_bm;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
-				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
+				//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
 			}
-			break;
+		    break;
 		case 13:
 			{
 				motor_num++;
 			}
 			break;
 		case 14 :
+			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
+			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			{
+				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2a;
+				PARITY_PORT.OUTSET = PARITY_bm;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
+				motor_num++;
+				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
+			}
+			break;
+		case 15:
+			{
+			motor_num++;
+			}
+			break;
+		case 16 :
+			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
+			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			{
+				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3b;
+				PARITY_PORT.OUTCLR = PARITY_bm;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
+				motor_num++;
+				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
+			}
+			break;
+		case 17:
+			{
+				motor_num++;
+			}
+			break;
+		case 18 :
 			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 				//LED_White_PORT.OUTTGL = LED_White_PIN_bm;
 				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3a;
 				PARITY_PORT.OUTSET = PARITY_bm;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
 				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
 			}
 			break;
-		case 15:
+		case 19:
 			{
 				motor_num=0;
 			}
