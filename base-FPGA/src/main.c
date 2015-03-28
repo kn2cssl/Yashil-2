@@ -44,7 +44,7 @@ int motor_num=0,test=0;
 uint32_t kck_time_dir,time_test,kck_time_chip,charge_time=0;
 int free_wheel=0;
 int wireless_reset=0;
-float adc =0;
+int adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0;
 
 ////////////////////////////////////////current defines
@@ -128,6 +128,7 @@ int main (void)
 		if(t_10ms)
 		{
 			change_ADC=6;
+			ADCA_init();
 			read_DriverCurrent();
 			if(cur_allow)
 			{
@@ -145,19 +146,21 @@ int main (void)
 			Test_Data[0]=(int)Driver.cur[0];
 			Test_Data[1]=(int)Driver.cur[1];
 			Test_Data[2]=(int)Driver.cur[2]; 
-			////SEND TEST DATA TO FT232
-			//char str1[20];
-			//uint8_t count1 = sprintf(str1,"%d,%d,%d,%d,%d\r",(int)Driver.adc[0],(int)Driver.adc[1],(int)Driver.adc[2],Driver.adc[3],t_1ms);
-			//
-			//for (uint8_t i=0;i<count1;i++)
-			//{
-				//usart_putchar(&USARTE0,str1[i]);
-			//}
-			/////////////////////////////////////////////////////////////
+			//SEND TEST DATA TO FT232
+			char str1[20];
+			uint8_t count1 = sprintf(str1,"%d,%d,%d,%d,%d\r",(int)Driver.adc[0],(int)Driver.adc[1],(int)Driver.adc[2],(int)Driver.adc[3],adc);
 			
+			for (uint8_t i=0;i<count1;i++)
+			{
+				usart_putchar(&USARTE0,str1[i]);
+			}
+			///////////////////////////////////////////////////////////
 			
+			change_ADC=3;
+			ADCA_init();
 		    //BUZZER
-		    adc = adc +(adc_get_unsigned_result(&ADCA,ADC_CH0)-adc)*0.01;
+		    //adc = adc +(adc_get_unsigned_result(&ADCA,ADC_CH0)-adc)*0.01;
+			adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
 		    if (adc<=2470 && adc>=1250)//10 volt battery voltage feedback
 		    {
 			    Buzzer_PORT.OUTSET = Buzzer_PIN_bm;
@@ -629,7 +632,7 @@ void read_DriverCurrent(void)
 	Driver.adc[0]=(adc_get_unsigned_result(&ADCB,ADC_CH0));
 	Driver.adc[1]=(adc_get_unsigned_result(&ADCB,ADC_CH1));
 	Driver.adc[2]=(adc_get_unsigned_result(&ADCA,ADC_CH1));
-	//Driver.adc[3]=(adc_get_unsigned_result(&ADCA,ADC_CH0));
+	Driver.adc[3]=(adc_get_unsigned_result(&ADCA,ADC_CH0));
 	
 	Driver.vol[0] = ((float)Driver.adc[0]) * 0.86;//voltage khorujie sensor jaryan barhasbe milivolt   (3.3*1000/4096)/0.937   0.937 factore taghsim voltage
 	Driver.vol[1] = ((float)Driver.adc[1]) * 0.86;
