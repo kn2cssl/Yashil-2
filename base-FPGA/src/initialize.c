@@ -59,7 +59,7 @@ void PORT_init(void)
 	////tc_enable_cc_channels(&TCD0,TC_CCAEN);
 	//tc_enable(&TCD0);
 //};
-#define TIMERD0_PER 0xEF
+#define TIMERD0_PER 0xEF//2C
 void TimerD0_init(void)
 {
 	tc_write_clock_source(&TCD0,TC_CLKSEL_DIV8_gc);

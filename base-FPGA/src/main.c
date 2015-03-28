@@ -141,11 +141,200 @@ int main (void)
  					flg_dir = 1;
 // 				}
 			}
-			////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
-			Robot_D[RobotID].M0b  = 0xD0;//0X18;//-1000//01;//low37121
-			Robot_D[RobotID].M0a  = 0x07;//0XFC;//high
-			//Robot_D[RobotID].M1b  = 0XE8;//2000//ghalat17325
-			//Robot_D[RobotID].M1a  = 0X03;
+			 ////Micro to FPGA communication test number 1 (comment the data packet received from wireless)
+			 //switch(flag2sec)//time2sec)//flag2sec
+			 //{ case 200:
+			 //// M.Setpoint=1000;
+			 //Robot_D[RobotID].M0b  = 0xE8;//low
+			 //Robot_D[RobotID].M0a  = 0X03;//high
+			 //break;
+			 //
+			 //case 400:
+			 ////M.Setpoint=2000;
+			 //Robot_D[RobotID].M0b  = 0xD0;//low
+			 //Robot_D[RobotID].M0a  = 0X07;//high
+			 //break;
+			 //
+			 //case 600:
+			 ////M.Setpoint=500;
+			 //Robot_D[RobotID].M0b  = 0xF4;//low
+			 //Robot_D[RobotID].M0a  = 0X01;//high
+			 //break;
+			 //
+			 //case 800:
+			 ////M.Setpoint=4000;
+			 //Robot_D[RobotID].M0b  = 0xA0;//low
+			 //Robot_D[RobotID].M0a  = 0X0F;//high
+			 //break;
+			 //
+			  //case 1000:
+			  ////M.Setpoint=1000;
+			  //Robot_D[RobotID].M0b  = 0xE8;//low
+			  //Robot_D[RobotID].M0a  = 0X03;//high
+			  //break;
+			  //
+			  //case 1200:
+			  ////M.Setpoint=500;
+			  //Robot_D[RobotID].M0b  = 0xF4;//low
+			  //Robot_D[RobotID].M0a  = 0X01;//high
+			  //break;
+			  //
+			  //case 1400:
+			  ////M.Setpoint=-500;
+			  //Robot_D[RobotID].M0b  = 0x0C;//low
+			  //Robot_D[RobotID].M0a  = 0XFE;//high
+			  //break;
+			  //
+			  //case 1600:
+			  ////M.Setpoint=400;
+			  //Robot_D[RobotID].M0b  = 0x90;//low
+			  //Robot_D[RobotID].M0a  = 0X01;//high
+			  //break;
+			  //
+			  //case 1800:
+			  ////M.Setpoint=350;
+			  //Robot_D[RobotID].M0b  = 0x5E;//low
+			  //Robot_D[RobotID].M0a  = 0X01;//high
+			  //break;
+			  //
+			   //case 2000:
+			   ////M.Setpoint=340;
+			   //Robot_D[RobotID].M0b  = 0x54;//low
+			   //Robot_D[RobotID].M0a  = 0X01;//high
+			   //break;
+			   //
+			   //case 2200:
+			   ////M.Setpoint=330;
+			   //Robot_D[RobotID].M0b  = 0x4A;//low
+			   //Robot_D[RobotID].M0a  = 0X01;//high
+			   //break;
+			   //
+			   //case 2400:
+			   ////M.Setpoint=100;
+			   //Robot_D[RobotID].M0b  = 0x64;//low
+			   //Robot_D[RobotID].M0a  = 0X00;//high
+			   //break;
+			   //
+			   //case 2600:
+			   ////M.Setpoint=50;
+			   //Robot_D[RobotID].M0b  = 0x32;//low
+			   //Robot_D[RobotID].M0a  = 0X00;//high
+			   //break;
+			   //
+			   //case 2800:
+			   ////M.Setpoint=1000;
+			   //Robot_D[RobotID].M0b  = 0xE8;//low
+			   //Robot_D[RobotID].M0a  = 0X03;//high
+			   //break;
+			   //
+			   //case 3000:
+			   ////M.Setpoint=-50;
+			   //Robot_D[RobotID].M0b  = 0xCE;//low
+			   //Robot_D[RobotID].M0a  = 0XFF;//high
+			   //flag2sec=0;
+			   //// time2sec=0;
+			   //break;
+			   //}
+			   
+			    //switch(time2sec)//flag2sec
+			    //{   case 10:
+			    //// M.Setpoint=1000;
+			    //Robot_D[RobotID].M0b  = 0xE8;//low
+			    //Robot_D[RobotID].M0a  = 0X03;//high
+			    //break;
+			    //
+			    //case 20:
+			    ////M.Setpoint=2000;
+			    //Robot_D[RobotID].M0b  = 0xD0;//low
+			    //Robot_D[RobotID].M0a  = 0X07;//high
+			    //break;
+			    //
+			    //case 30:
+			    ////M.Setpoint=500;
+			    //Robot_D[RobotID].M0b  = 0xF4;//low
+			    //Robot_D[RobotID].M0a  = 0X01;//high
+			    //break;
+			    //
+			    //case 40:
+			    ////M.Setpoint=4000;
+			    //Robot_D[RobotID].M0b  = 0xA0;//low
+			    //Robot_D[RobotID].M0a  = 0X0F;//high
+			    //break;
+			    //
+			    //case 50:
+			    ////M.Setpoint=1000;
+			    //Robot_D[RobotID].M0b  = 0xE8;//low
+			    //Robot_D[RobotID].M0a  = 0X03;//high
+			    //break;
+				 //
+				 //case 60:
+				 ////M.Setpoint=500;
+				 //Robot_D[RobotID].M0b  = 0xF4;//low
+				 //Robot_D[RobotID].M0a  = 0X01;//high
+				 //break;
+				 //
+				 //case 70:
+				 ////M.Setpoint=-500;
+				 //Robot_D[RobotID].M0b  = 0x0C;//low
+				 //Robot_D[RobotID].M0a  = 0XFE;//high
+				 //break;
+				 //
+				 //case 80:
+				 ////M.Setpoint=400;
+				 //Robot_D[RobotID].M0b  = 0x90;//low
+				 //Robot_D[RobotID].M0a  = 0X01;//high
+				 //break;
+				 //
+				 //case 90:
+				 ////M.Setpoint=350;
+				 //Robot_D[RobotID].M0b  = 0x5E;//low
+				 //Robot_D[RobotID].M0a  = 0X01;//high
+				 //break;
+				 //
+				 //case 100:
+				 ////M.Setpoint=340;
+				 //Robot_D[RobotID].M0b  = 0x54;//low
+				 //Robot_D[RobotID].M0a  = 0X01;//high
+				 //break;
+				 //
+				  //case 110:
+				  ////M.Setpoint=330;
+				  //Robot_D[RobotID].M0b  = 0x4A;//low
+				  //Robot_D[RobotID].M0a  = 0X01;//high
+				  //break;
+				  //
+				  //case 120:
+				  ////M.Setpoint=100;
+				  //Robot_D[RobotID].M0b  = 0x64;//low
+				  //Robot_D[RobotID].M0a  = 0X00;//high
+				  //break;
+				  //
+				  //case 130:
+				  ////M.Setpoint=50;
+				  //Robot_D[RobotID].M0b  = 0x32;//low
+				  //Robot_D[RobotID].M0a  = 0X00;//high
+				  //break;
+				  //
+				  //case 140:
+				  ////M.Setpoint=1000;
+				  //Robot_D[RobotID].M0b  = 0xE8;//low
+				  //Robot_D[RobotID].M0a  = 0X03;//high
+				  //break;
+				  //
+				  //case 150:
+				  ////M.Setpoint=-50;
+				  //Robot_D[RobotID].M0b  = 0xCE;//low
+				  //Robot_D[RobotID].M0a  = 0XFF;//high
+				  ////flag2sec=0;
+				  //time2sec=0;
+				  //break;
+				  //
+				   //}
+			//////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
+			//Robot_D[RobotID].M0b  = 0xE8;//0X18;//-1000//01;//low37121
+			//Robot_D[RobotID].M0a  = 0x03;//0XFC;//high
+			//Robot_D[RobotID].M1b  = 0XD0;//2000//ghalat17325
+			//Robot_D[RobotID].M1a  = 0X07;
 			//Robot_D[RobotID].M2b  = 0XDC;//1000//low13703
 			//Robot_D[RobotID].M2a  = 0X05;//high
 			//Robot_D[RobotID].M3b  = 0xF4;//3000//32;//ghalat30258
@@ -176,8 +365,8 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		  {
 			  LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			  Robot_D[RobotID].RID  = Buf_Rx_L[0];
-			  //Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
-			  //Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
+			  Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
+			  Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
 			  Robot_D[RobotID].M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
 			  Robot_D[RobotID].M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
 			  Robot_D[RobotID].M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
@@ -356,11 +545,11 @@ ISR(TCD0_CCA_vect)
 	switch (motor_num)
 	{
 		case 0 :
-		MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
+		//MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 		if(((CLK_par_PORT.IN && CLK_par_bm)))
 		{
 			FPGA_DATA_PORT.OUT = 0xAA;//low byte
-			PARITY_PORT.OUTCLR = PARITY_bm;
+			//PARITY_PORT.OUTCLR = PARITY_bm;
 			STARTBIT_PORT.OUTSET = STARTBIT_bm;
 			motor_num++;
 			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
@@ -369,25 +558,26 @@ ISR(TCD0_CCA_vect)
 		case 1:
 		{
 			motor_num++;
-		}
-		break;
-		case 2 :
-		MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
-		if(((CLK_par_PORT.IN && CLK_par_bm)))
-		{
-			FPGA_DATA_PORT.OUT = 0x55;
-			PARITY_PORT.OUTSET = PARITY_bm;
 			STARTBIT_PORT.OUTSET = STARTBIT_bm;
-			motor_num++;
-			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
 		}
 		break;
-		case 3:
-		{
-			motor_num++;
-		}
-		break;
-		case 4 :
+		//case 2 :
+		//MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
+		//if(((CLK_par_PORT.IN && CLK_par_bm)))
+		//{
+			//FPGA_DATA_PORT.OUT = 0x55;
+			//PARITY_PORT.OUTSET = PARITY_bm;
+			//STARTBIT_PORT.OUTSET = STARTBIT_bm;
+			//motor_num++;
+			////PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
+		//}
+		//break;
+		//case 3:
+		//{
+			//motor_num++;
+		//}
+		//break;
+		case 2 :
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
@@ -398,12 +588,13 @@ ISR(TCD0_CCA_vect)
 			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
 			}
 		break;
-		case 5:
+		case 3:
 		     {
 				 motor_num++;
+				 STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			 }
 		break;
-		case 6 :
+		case 4 :
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
@@ -414,12 +605,13 @@ ISR(TCD0_CCA_vect)
 			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
 			}
 		break;
-		case 7:
+		case 5:
 			{
 			motor_num++;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 			break;
-		case 8 :
+		case 6 :
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
@@ -430,12 +622,13 @@ ISR(TCD0_CCA_vect)
 			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
 			}
 			break;
-		case 9:
+		case 7:
 			{
 			motor_num++;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 		    break;
-		case 10 :
+		case 8 :
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
@@ -446,12 +639,13 @@ ISR(TCD0_CCA_vect)
 			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
 			}
 			break;
-		case 11:
+		case 9:
 			{
 			motor_num++;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 		    break;
-		case 12 :
+		case 10 :
 			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
@@ -462,12 +656,13 @@ ISR(TCD0_CCA_vect)
 				//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
 			}
 		    break;
-		case 13:
+		case 11:
 			{
 				motor_num++;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 			break;
-		case 14 :
+		case 12 :
 			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
@@ -478,12 +673,13 @@ ISR(TCD0_CCA_vect)
 				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
 			}
 			break;
-		case 15:
+		case 13:
 			{
 			motor_num++;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 			break;
-		case 16 :
+		case 14 :
 			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
@@ -494,12 +690,13 @@ ISR(TCD0_CCA_vect)
 				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
 			}
 			break;
-		case 17:
+		case 15:
 			{
 				motor_num++;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 			break;
-		case 18 :
+		case 16 :
 			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
@@ -511,9 +708,10 @@ ISR(TCD0_CCA_vect)
 				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
 			}
 			break;
-		case 19:
+		case 17:
 			{
 				motor_num=0;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 			break;
 		}
