@@ -56,12 +56,16 @@ struct Driver
 	};
 struct Driver Driver;
 
+int change_ADC,flg_change=0;
+
+
 unsigned int buff_offset[320];
 void read_DriverCurrent(void);
 void chek_DriverCurrent(int);
 void calc_offset(int);
 int driver_adc(int);
-uint32_t t_allow,t_test;
+uint32_t t_allow,t_test,t_1ms,t_1s;
+int flg_2min=0;
 int cur_allow=0;
 int current_ov=0;
 int flg_alarm=0;
@@ -122,7 +126,7 @@ int main (void)
 			////////////////////////////////////////////////////////// motor current sensor
 		if(t_10ms)
 		{
-			read_DriverCurrent();			
+			read_DriverCurrent();
 			if(cur_allow)
 			{
 				chek_DriverCurrent(0);
@@ -134,20 +138,20 @@ int main (void)
 		}
 		current_ov = Driver.cur_alarm[0] || Driver.cur_alarm[1] || Driver.cur_alarm[2] || Driver.cur_alarm[3];
 		if (current_ov)	Buzzer_PORT.OUTSET = (flg_alarm>>Buzzer_PIN_bp);
-			
+					
 			
 			Test_Data[0]=(int)Driver.cur[0];
 			Test_Data[1]=(int)Driver.cur[1];
-			Test_Data[2]=(int)Driver.cur[2];			 
+			Test_Data[2]=(int)Driver.cur[2]; 
 			////SEND TEST DATA TO FT232
 			//char str1[20];
-			//uint8_t count1 = sprintf(str1,"%d,%d,%d\r",(int)Driver.cur[0],(int)t_allow,(int)Driver.cur[2]);
+			//uint8_t count1 = sprintf(str1,"%d,%d,%d,%d,%d\r",(int)Driver.adc[0],(int)Driver.adc[1],(int)Driver.adc[2],Driver.adc[3],t_1ms);
 			//
 			//for (uint8_t i=0;i<count1;i++)
 			//{
 				//usart_putchar(&USARTE0,str1[i]);
 			//}
-			///////////////////////////////////////////////////////////
+			/////////////////////////////////////////////////////////////
 			
 			
 		    //BUZZER
@@ -829,7 +833,7 @@ void read_DriverCurrent(void)
 	Driver.adc[0]=(adc_get_unsigned_result(&ADCB,ADC_CH0));
 	Driver.adc[1]=(adc_get_unsigned_result(&ADCB,ADC_CH1));
 	Driver.adc[2]=(adc_get_unsigned_result(&ADCA,ADC_CH1));
-	//Driver.adc[3]=(adc_get_unsigned_result(&ADCA,ADC_CH2));
+	//Driver.adc[3]=(adc_get_unsigned_result(&ADCA,ADC_CH0));
 	
 	Driver.vol[0] = ((float)Driver.adc[0]) * 0.86;//voltage khorujie sensor jaryan barhasbe milivolt   (3.3*1000/4096)/0.937   0.937 factore taghsim voltage
 	Driver.vol[1] = ((float)Driver.adc[1]) * 0.86;
@@ -852,22 +856,22 @@ void read_DriverCurrent(void)
 }
 void chek_DriverCurrent(int x)
 {
-	if(Driver.cur[x]>=1000)
-	{
-		Driver.count_L[x] ++;
-		if (Driver.count_L[x] >800)// && count<200)
-		{
-			Driver.cur_alarm[x] = 1;
-			Driver.count_L[x] = 0;
-		}
-	}
-	else if (Driver.cur[x]>=2000)
+	if (Driver.cur[x]>=2000)
 	{
 		Driver.count_H[x] ++;
 		if (Driver.count_H[x] >80)// && count<200)
 		{
 			Driver.cur_alarm[x] = 1;
 			Driver.count_H[x] = 0;
+		}
+	}
+	else if(Driver.cur[x]>=1000)
+	{
+		Driver.count_L[x] ++;
+		if (Driver.count_L[x] >800)// && count<200)
+		{
+			Driver.cur_alarm[x] = 1;
+			Driver.count_L[x] = 0;
 		}
 	}
 	else	{Driver.count_H[x] = 0;Driver.count_L[x] = 0;}

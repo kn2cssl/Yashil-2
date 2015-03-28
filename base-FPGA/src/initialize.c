@@ -133,6 +133,8 @@ void USARTE0_init(void)
 	usart_tx_enable(&USARTE0_conf);
 	//usart_rx_enable(&USARTE0_conf);
 }
+
+extern int change_ADC;
   //BATTERY FEEDBACK ----> PORTA3
 #define CONFIG_ADC_INTLVL ADC_CH_INTLVL_LO_gc
 void ADCA_init(void)
@@ -155,7 +157,8 @@ void ADCA_init(void)
     adc_set_conversion_trigger(&adca_conf,ADC_TRIG_FREERUN_SWEEP,2,0);
    // adc_set_config_compare_value(adcb_conf,KCK_MAX_CHARGE_AMP);
     adc_write_configuration(&ADCA,&adca_conf);
-    //
+	
+  
     ///* Configure ADC channel 0:  battery voltage feedback
     //* - Input: ADCA3
     //* - interrupts disable
@@ -163,6 +166,16 @@ void ADCA_init(void)
     adcch_read_configuration(&ADCA,1, &adca_ch_conf);
     adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN3,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
     adcch_write_configuration(&ADCA,1,&adca_ch_conf);
+	
+	
+	///* Configure ADC channel 0: motor4 current feedback & battery voltage feedback
+    //* - Input: ADCB6
+    //* - interrupts disable
+    //*/
+    //adcch_read_configuration(&ADCA,1,&adca_ch_conf);
+    //adcch_set_input(&adca_ch_conf,change_ADC,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+    ////adcch_disable_interrupt(&adcb_ch_conf);
+    //adcch_write_configuration(&ADCA,1,&adca_ch_conf);
     
 	/* Configure ADC channel 1:  motor3 current feedback
     * - Input: ADCB5
@@ -173,20 +186,8 @@ void ADCA_init(void)
     adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN5,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
 	//adcch_set_interrupt_mode(&adcb_ch_conf,ADCCH_MODE_ABOVE);
 	//adcch_enable_interrupt(&adcb_ch_conf);
-    adcch_write_configuration(&ADCA,2,&adca_ch_conf);
-	
-   
-  
-	///* Configure ADC channel 3: motor4 current feedback
-    //* - Input: ADCB6
-    //* - interrupts disable
-    //*/
-    //adcch_read_configuration(&ADCA,3,&adca_ch_conf);
-    //adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN6,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
-    ////adcch_disable_interrupt(&adcb_ch_conf);
-    //adcch_write_configuration(&ADCA,3,&adca_ch_conf);
-    //
-	
+    adcch_write_configuration(&ADCA,2,&adca_ch_conf);  
+		
     
     ///* Configure ADC channel 3:
     //* - Input: ADCB7
@@ -246,9 +247,6 @@ void ADCB_init(void)
 	//adcch_enable_interrupt(&adcb_ch_conf);
     adcch_write_configuration(&ADCB,2,&adcb_ch_conf);
 	//
-    
-	
-	
 	
 	
 	///* Configure ADC channel 1:  motor3 current feedback
