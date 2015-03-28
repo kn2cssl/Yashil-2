@@ -127,6 +127,7 @@ int main (void)
 			////////////////////////////////////////////////////////// motor current sensor
 		if(t_10ms)
 		{
+			change_ADC=6;
 			read_DriverCurrent();
 			if(cur_allow)
 			{
@@ -293,6 +294,9 @@ ISR(TCE1_OVF_vect)//1ms
 	t++;
 	if (t>=10)
 	{
+		
+		//flg_change = ~(flg_change);
+		//change_ADC = flg_change?(3):(6);
 		t_10ms=1;
 		t=0;
 	}

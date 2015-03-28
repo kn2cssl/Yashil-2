@@ -159,23 +159,23 @@ void ADCA_init(void)
     adc_write_configuration(&ADCA,&adca_conf);
 	
   
-    ///* Configure ADC channel 0:  battery voltage feedback
-    //* - Input: ADCA3
-    //* - interrupts disable
-    //*/
-    adcch_read_configuration(&ADCA,1, &adca_ch_conf);
-    adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN3,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
-    adcch_write_configuration(&ADCA,1,&adca_ch_conf);
-	
-	
-	///* Configure ADC channel 0: motor4 current feedback & battery voltage feedback
-    //* - Input: ADCB6
-    //* - interrupts disable
-    //*/
-    //adcch_read_configuration(&ADCA,1,&adca_ch_conf);
-    //adcch_set_input(&adca_ch_conf,change_ADC,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
-    ////adcch_disable_interrupt(&adcb_ch_conf);
+    /////* Configure ADC channel 0:  battery voltage feedback
+    ////* - Input: ADCA3
+    ////* - interrupts disable
+    ////*/
+    //adcch_read_configuration(&ADCA,1, &adca_ch_conf);
+    //adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN3,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
     //adcch_write_configuration(&ADCA,1,&adca_ch_conf);
+	
+	
+	/* Configure ADC channel 0: motor4 current feedback(ADCA6) & battery voltage feedback(ADCA3)
+    * - Input: ADCA6
+    * - interrupts disable
+    */
+    adcch_read_configuration(&ADCA,1,&adca_ch_conf);
+    adcch_set_input(&adca_ch_conf,change_ADC,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+    //adcch_disable_interrupt(&adcb_ch_conf);
+    adcch_write_configuration(&ADCA,1,&adca_ch_conf);
     
 	/* Configure ADC channel 1:  motor3 current feedback
     * - Input: ADCB5
