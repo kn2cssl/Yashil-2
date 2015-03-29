@@ -44,7 +44,7 @@ int motor_num=0,test=0;
 uint32_t kck_time_dir,time_test,kck_time_chip,charge_time=0;
 int free_wheel=0;
 int wireless_reset=0;
-int adc =0;
+float adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0;
 
 ////////////////////////////////////////current defines
@@ -67,12 +67,13 @@ void read_DriverCurrent(int);
 void chek_DriverCurrent(int);
 void calc_offset(int);
 int driver_adc(int);
-uint32_t t_allow,t_1ms,t_10s;
+uint32_t t_allow,t_1ms;
 int flg_2min=0,flg_2min10ms=0;
 int cur_allow=0;
 int current_ov=0;
 int flg_alarm=0;
 int t,t_10ms=0;
+int bat_count=0,battery_alarm=0;
 //////////////////////////////////////////////
 int Robot_Select,Robot_Select_Last;
 int Test_Data[8];
@@ -126,7 +127,8 @@ int main (void)
 	while(1)
 	  {  
 		    asm("wdr");
-			///////////////////////////////////////////////////////////////// motor current sensor
+		
+		///////////////////////////////////////////////////////////////// motor current sensor
 		if(t_10ms)
 		{
 			
@@ -146,10 +148,8 @@ int main (void)
 		t_10ms=0;
 		}
 		current_ov = Driver.cur_alarm[0] || Driver.cur_alarm[1] || Driver.cur_alarm[2] || Driver.cur_alarm[3];
-		if (current_ov)	Buzzer_PORT.OUTSET = (flg_alarm>>Buzzer_PIN_bp);
-					
 			
-			Test_Data[0]=(int)Driver.cur[0];
+			Test_Data[0]=(int)adc;
 			Test_Data[1]=(int)Driver.cur[1];
 			Test_Data[2]=(int)Driver.cur[2]; 
 			Test_Data[3]=(int)Driver.cur[3];			
@@ -158,28 +158,35 @@ int main (void)
 			{
 				change_ADC=3;
 				ADCA_init();
-				adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
-				change_ADC=6;
-				ADCA_init();
 				flg_2min=0;
 			}
-		    if (adc<=2470 && adc>=1250)//10 volt battery voltage feedback
-		    {
-			    Buzzer_PORT.OUTSET = Buzzer_PIN_bm;
-		    }
-		    else
-		    {
-			    Buzzer_PORT.OUTCLR = Buzzer_PIN_bm;
-		    }
-			
-			//SEND TEST DATA TO FT232
-			char str1[20];
-			uint8_t count1 = sprintf(str1,"%d,%d\r",(int)Driver.cur[3],adc);
-			
-			for (uint8_t i=0;i<count1;i++)
+			if (flg_2min10ms)
 			{
-				usart_putchar(&USARTE0,str1[i]);
+				change_ADC=6;
+				ADCA_init();
+				flg_2min10ms=0;				
 			}
+			if(change_ADC==3)
+			{
+				adc = adc + (0.2*((float)adc_get_unsigned_result(&ADCA,ADC_CH0)-adc));
+				if (adc<=2470 && adc>=1250)//10 volt battery voltage feedback   2500-->9.3
+				{
+					bat_count++;
+					if (bat_count>=50)
+					{
+						battery_alarm=1;
+						bat_count=0;
+					}
+				}
+			} 
+			
+			if(current_ov && flg_alarm)
+			Buzzer_PORT.OUTSET = Buzzer_PIN_bm;
+			else if(battery_alarm)
+			Buzzer_PORT.OUTSET = Buzzer_PIN_bm;			
+			else
+			Buzzer_PORT.OUTCLR = Buzzer_PIN_bm;
+			
 			////////////////////////////////////////////////////////////////////////////////SHOOT
 			PORTC_OUTCLR=KCK_SH_PIN_bm;
 			if((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp)
@@ -230,6 +237,14 @@ int main (void)
 			else
 			 LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
 
+	  ////SEND TEST DATA TO FT232
+	  //char str1[20];
+	  //uint8_t count1 = sprintf(str1,"%d\r",(int)adc);
+	  //
+	  //for (uint8_t i=0;i<count1;i++)
+	  //{
+	  //usart_putchar(&USARTE0,str1[i]);
+	  //}
 	  }
 }
 
@@ -311,20 +326,27 @@ ISR(TCE1_OVF_vect)//1ms
 		t=0;
 	}
 	t_alarm++;
-	if (t_alarm>=800)
+	if (t_alarm>=500)
 	{
 		flg_alarm = ~(flg_alarm);
 		t_alarm=0;
+		//if (t_alarm>=1100)
+		//{
+			//flg_alarm=1;t_alarm=0;
+		//}
+		
 		
 	}
 	
 	t_1ms++;
-	if (t_1ms>=60000)
+	if (t_1ms==60000)
 	{
-		flg_2min=1;
-		//flg_2min10ms++;
+		flg_2min=1;				
+	}
+	else if (t_1ms>=60100)
+	{
+		flg_2min10ms=1;
 		t_1ms=0;
-		
 	}
 	
 	timectrl++;
@@ -653,36 +675,6 @@ void read_DriverCurrent(int x)
 	Driver.vol[x] = Driver.vol_last[x] + (0.1*(float)(Driver.vol[x] - Driver.vol_last[x]));	
 	Driver.cur[x] = (Driver.vol[x] - Driver.offset[x]) * 5.33;	
 	if(Driver.cur[x]<5) Driver.cur[x]=0;
-	
-	//Driver.vol_last[0] = Driver.vol[0];
-	//Driver.vol_last[1] = Driver.vol[1];
-	//Driver.vol_last[2] = Driver.vol[2];
-	//Driver.vol_last[3] = Driver.vol[3];
-	//
-	//Driver.adc[0] = driver_adc(0);
-	//Driver.adc[1] = driver_adc(1);
-	//Driver.adc[2] = driver_adc(2);
-	//Driver.adc[3] = driver_adc(3);
-	//
-	//Driver.vol[0] = ((float)Driver.adc[0]) * 0.86;//voltage khorujie sensor jaryan barhasbe milivolt   (3.3*1000/4096)/0.937   0.937 factore taghsim voltage
-	//Driver.vol[1] = ((float)Driver.adc[1]) * 0.86;
-	//Driver.vol[2] = ((float)Driver.adc[2]) * 0.86;
-	//Driver.vol[3] = ((float)Driver.adc[3]) * 0.86;
-	//
-	//Driver.vol[0] = Driver.vol_last[0] + (0.1*(float)(Driver.vol[0] - Driver.vol_last[0]));
-	//Driver.vol[1] = Driver.vol_last[1] + (0.1*(float)(Driver.vol[1] - Driver.vol_last[1]));
-	//Driver.vol[2] = Driver.vol_last[2] + (0.1*(float)(Driver.vol[2] - Driver.vol_last[2]));
-	//Driver.vol[3] = Driver.vol_last[3] + (0.1*(float)(Driver.vol[3] - Driver.vol_last[3]));
-	//
-	//Driver.cur[0] = (Driver.vol[0] - Driver.offset[0]) * 5.33;
-	//Driver.cur[1] = (Driver.vol[1] - Driver.offset[1]) * 5.33;
-	//Driver.cur[2] = (Driver.vol[2] - Driver.offset[2]) * 5.33;
-	//Driver.cur[3] = (Driver.vol[3] - Driver.offset[3]) * 5.33;
-	//
-	//if(Driver.cur[0]<5) Driver.cur[0]=0;
-	//if(Driver.cur[1]<5) Driver.cur[1]=0;
-	//if(Driver.cur[2]<5) Driver.cur[2]=0;
-	//if(Driver.cur[3]<5) Driver.cur[3]=0;
 }
 void chek_DriverCurrent(int x)
 {
