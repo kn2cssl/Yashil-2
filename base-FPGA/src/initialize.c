@@ -104,16 +104,16 @@ void TimerE1_init(void)
     tc_set_direction(&TCE1,TC_UP);
     tc_enable(&TCE1);
 };
-void TimerE0_init(void)
-{
-	tc_write_clock_source(&TCE0,TC_CLKSEL_DIV256_gc);
-	tc_set_wgm(&TCE0,TC_WG_SS);
-	tc_write_period(&TCE0,0x00FF);
-	tc_set_direction(&TCE0,TC_UP);
-	tc_enable_cc_channels(&TCE0,TC_CCCEN);
-	tc_enable_cc_channels(&TCE0,TC_CCDEN);
-	tc_enable(&TCE0);
-};
+//#define TIMERE0_PER 0x4C4A
+//void TimerE0_init(void)
+//{
+	//tc_write_clock_source(&TCE0,TC_CLKSEL_DIV1024_gc);
+	//tc_set_wgm(&TCE0,TC_WG_NORMAL);
+	//tc_set_overflow_interrupt_level(&TCE0,TC_INT_LVL_MED);
+	//tc_write_period(&TCE0,TIMERE0_PER);
+	//tc_set_direction(&TCE0,TC_UP);
+	//tc_enable(&TCE0);
+//};
 void SPI_Init(void)
 {
 	spi_xmega_set_baud_div(&NRF24L01_L_SPI,8000000UL,F_CPU);

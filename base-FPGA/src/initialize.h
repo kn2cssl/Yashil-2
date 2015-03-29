@@ -146,6 +146,7 @@ void TimerD0_init(void);//timer 0.063ms
 void TimerC0_init(void);//pwm?!?
 void TimerC1_init(void);
 void TimerE1_init(void);
+//void TimerE0_init(void);
 
 void ADCA_init(void);
 void ADCB_init(void);

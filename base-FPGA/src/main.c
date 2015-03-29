@@ -63,12 +63,12 @@ int change_ADC,flg_change=0;
 
 
 unsigned int buff_offset[320];
-void read_DriverCurrent(void);
+void read_DriverCurrent(int);
 void chek_DriverCurrent(int);
 void calc_offset(int);
 int driver_adc(int);
-uint32_t t_allow,t_test,t_1ms,t_1s;
-int flg_2min=0;
+uint32_t t_allow,t_1ms,t_10s;
+int flg_2min=0,flg_2min10ms=0;
 int cur_allow=0;
 int current_ov=0;
 int flg_alarm=0;
@@ -97,10 +97,12 @@ int main (void)
 	//Enable LowLevel & HighLevel Interrupts
 	PMIC_CTRL |= PMIC_HILVLEN_bm | PMIC_LOLVLEN_bm |PMIC_MEDLVLEN_bm;
 
+	change_ADC=6;
 	PORT_init();
 	TimerD0_init();
 	TimerC0_init();
 	TimerC1_init();
+	//TimerE0_init();
 	TimerE1_init();
 	USARTE0_init();
 	ADCA_init();
@@ -119,22 +121,26 @@ int main (void)
 	calc_offset(0);
 	calc_offset(1);
 	calc_offset(2);
-	//calc_offset(3);
+	calc_offset(3);
 	
 	while(1)
 	  {  
 		    asm("wdr");
-			////////////////////////////////////////////////////////// motor current sensor
+			///////////////////////////////////////////////////////////////// motor current sensor
 		if(t_10ms)
 		{
-			change_ADC=6;
-			ADCA_init();
-			read_DriverCurrent();
+			
+			read_DriverCurrent(0);
+			read_DriverCurrent(1);
+			read_DriverCurrent(2);
+			if(change_ADC==6)
+			read_DriverCurrent(3);
 			if(cur_allow)
 			{
 				chek_DriverCurrent(0);
 				chek_DriverCurrent(1);
 				chek_DriverCurrent(2);
+				chek_DriverCurrent(3);
 								
 			}
 		t_10ms=0;
@@ -146,21 +152,26 @@ int main (void)
 			Test_Data[0]=(int)Driver.cur[0];
 			Test_Data[1]=(int)Driver.cur[1];
 			Test_Data[2]=(int)Driver.cur[2]; 
-			//SEND TEST DATA TO FT232
-			char str1[20];
-			uint8_t count1 = sprintf(str1,"%d,%d,%d,%d,%d\r",(int)Driver.adc[0],(int)Driver.adc[1],(int)Driver.adc[2],(int)Driver.adc[3],adc);
-			
-			for (uint8_t i=0;i<count1;i++)
+			Test_Data[3]=(int)Driver.cur[3];			
+			///////////////////////////////////////////////////////////////////////////BUZZER
+			if (flg_2min)
 			{
-				usart_putchar(&USARTE0,str1[i]);
-			}
-			///////////////////////////////////////////////////////////
-			
-			change_ADC=3;
-			ADCA_init();
-		    //BUZZER
-		    //adc = adc +(adc_get_unsigned_result(&ADCA,ADC_CH0)-adc)*0.01;
-			adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
+				change_ADC=3;
+				ADCA_init();			
+								
+			//}
+			//if (flg_2min10ms<=10)
+			//{
+				//adc = adc +(adc_get_unsigned_result(&ADCA,ADC_CH0)-adc)*0.01;
+				adc = adc_get_unsigned_result(&ADCA,ADC_CH0);				
+			//}
+			//else if (flg_2min10ms>10)
+			//{
+				change_ADC=6;
+				ADCA_init();
+				//flg_2min10ms=0;
+			//}
+			flg_2min=0;}
 		    if (adc<=2470 && adc>=1250)//10 volt battery voltage feedback
 		    {
 			    Buzzer_PORT.OUTSET = Buzzer_PIN_bm;
@@ -170,7 +181,15 @@ int main (void)
 			    Buzzer_PORT.OUTCLR = Buzzer_PIN_bm;
 		    }
 			
-			//SHOOT
+			//SEND TEST DATA TO FT232
+			char str1[20];
+			uint8_t count1 = sprintf(str1,"%d,%d\r",(int)Driver.cur[3],adc);
+			
+			for (uint8_t i=0;i<count1;i++)
+			{
+				usart_putchar(&USARTE0,str1[i]);
+			}
+			////////////////////////////////////////////////////////////////////////////////SHOOT
 			PORTC_OUTCLR=KCK_SH_PIN_bm;
 			if((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp)
 			{
@@ -297,9 +316,6 @@ ISR(TCE1_OVF_vect)//1ms
 	t++;
 	if (t>=10)
 	{
-		
-		//flg_change = ~(flg_change);
-		//change_ADC = flg_change?(3):(6);
 		t_10ms=1;
 		t=0;
 	}
@@ -308,6 +324,15 @@ ISR(TCE1_OVF_vect)//1ms
 	{
 		flg_alarm = ~(flg_alarm);
 		t_alarm=0;
+		
+	}
+	
+	t_1ms++;
+	if (t_1ms>=60000)
+	{
+		flg_2min=1;
+		flg_2min10ms++;
+		t_1ms=0;
 		
 	}
 	
@@ -411,10 +436,14 @@ ISR(TCE1_OVF_vect)//1ms
 		kck_time_chip=0; flg_chip=0;}
 	}
 }
-//
-//ISR(USARTE0_RXC_vect)       
+//ISR(TCE0_OVF_vect)//10s
 //{
-	//
+	//t_10s++;
+	//if (t_10s>=12)
+	//{
+		//flg_2min=1;
+		//t_10s=0;
+	//}
 //}
 
 ISR(TCD0_OVF_vect)
@@ -604,16 +633,19 @@ void NRF_init (void)
 
 int driver_adc(int x)
 {
-	if (x==0)     return adc_get_unsigned_result(&ADCB,ADC_CH0);
-	else if(x==1) return adc_get_unsigned_result(&ADCB,ADC_CH1);
-	else if(x==2) return adc_get_unsigned_result(&ADCA,ADC_CH1);
+	switch (x)
+	{
+		case 0: return adc_get_unsigned_result(&ADCB,ADC_CH0); break;
+		case 1: return adc_get_unsigned_result(&ADCB,ADC_CH1); break;
+		case 2: return adc_get_unsigned_result(&ADCA,ADC_CH1); break;
+		case 3: return adc_get_unsigned_result(&ADCA,ADC_CH0); break;
+	}
 }
 void calc_offset(int x)
 {
 	Driver.offset[x] =0;
 	for (int i=0;i<50;i++)
 	{
-		//Driver.adc[0] = adc_get_unsigned_result(&ADCA,ADC_CH0);
 		Driver.adc[x]=(driver_adc(x));
 		Driver.offset[x] = Driver.offset[x] + Driver.adc[x];
 		
@@ -622,43 +654,51 @@ void calc_offset(int x)
 	Driver.offset[x] = ((float)Driver.offset[x]) * 0.86;
 	
 }
-void read_DriverCurrent(void)
+void read_DriverCurrent(int x)
 {
-	Driver.vol_last[0] = Driver.vol[0];
-	Driver.vol_last[1] = Driver.vol[1];
-	Driver.vol_last[2] = Driver.vol[2];
+	Driver.vol_last[x] = Driver.vol[x];	
+	Driver.adc[x] = driver_adc(x);	
+	Driver.vol[x] = ((float)Driver.adc[x]) * 0.86;//voltage khorujie sensor jaryan barhasbe milivolt   (3.3*1000/4096)/0.937   0.937 factore taghsim voltage
+	Driver.vol[x] = Driver.vol_last[x] + (0.1*(float)(Driver.vol[x] - Driver.vol_last[x]));	
+	Driver.cur[x] = (Driver.vol[x] - Driver.offset[x]) * 5.33;	
+	if(Driver.cur[x]<5) Driver.cur[x]=0;
+	
+	//Driver.vol_last[0] = Driver.vol[0];
+	//Driver.vol_last[1] = Driver.vol[1];
+	//Driver.vol_last[2] = Driver.vol[2];
 	//Driver.vol_last[3] = Driver.vol[3];
-	
-	Driver.adc[0]=(adc_get_unsigned_result(&ADCB,ADC_CH0));
-	Driver.adc[1]=(adc_get_unsigned_result(&ADCB,ADC_CH1));
-	Driver.adc[2]=(adc_get_unsigned_result(&ADCA,ADC_CH1));
-	Driver.adc[3]=(adc_get_unsigned_result(&ADCA,ADC_CH0));
-	
-	Driver.vol[0] = ((float)Driver.adc[0]) * 0.86;//voltage khorujie sensor jaryan barhasbe milivolt   (3.3*1000/4096)/0.937   0.937 factore taghsim voltage
-	Driver.vol[1] = ((float)Driver.adc[1]) * 0.86;
-	Driver.vol[2] = ((float)Driver.adc[2]) * 0.86;
+	//
+	//Driver.adc[0] = driver_adc(0);
+	//Driver.adc[1] = driver_adc(1);
+	//Driver.adc[2] = driver_adc(2);
+	//Driver.adc[3] = driver_adc(3);
+	//
+	//Driver.vol[0] = ((float)Driver.adc[0]) * 0.86;//voltage khorujie sensor jaryan barhasbe milivolt   (3.3*1000/4096)/0.937   0.937 factore taghsim voltage
+	//Driver.vol[1] = ((float)Driver.adc[1]) * 0.86;
+	//Driver.vol[2] = ((float)Driver.adc[2]) * 0.86;
 	//Driver.vol[3] = ((float)Driver.adc[3]) * 0.86;
-	
-	Driver.vol[0] = Driver.vol_last[0] + (0.1*(float)(Driver.vol[0] - Driver.vol_last[0]));
-	Driver.vol[1] = Driver.vol_last[1] + (0.1*(float)(Driver.vol[1] - Driver.vol_last[1]));
-	Driver.vol[2] = Driver.vol_last[2] + (0.1*(float)(Driver.vol[2] - Driver.vol_last[2]));
-	//Driver.vol[3] = Driver.vol_last[3] + (0.02*(float)(Driver.vol[3] - Driver.vol_last[3]));
-	
-	Driver.cur[0] = (Driver.vol[0] - Driver.offset[0]) * 5.33;
-	Driver.cur[1] = (Driver.vol[1] - Driver.offset[1]) * 5.33;
-	Driver.cur[2] = (Driver.vol[2] - Driver.offset[2]) * 5.33;
-	//Driver.cur[3] = (Driver.vol[3] - Driver.offset[3]) * 5.33;;
-	if(Driver.cur[0]<5) Driver.cur[0]=0;
-	if(Driver.cur[1]<5) Driver.cur[1]=0;
-	if(Driver.cur[2]<5) Driver.cur[2]=0;
-	//if(Driver.cur[3]) Driver.cur[3]=0;
+	//
+	//Driver.vol[0] = Driver.vol_last[0] + (0.1*(float)(Driver.vol[0] - Driver.vol_last[0]));
+	//Driver.vol[1] = Driver.vol_last[1] + (0.1*(float)(Driver.vol[1] - Driver.vol_last[1]));
+	//Driver.vol[2] = Driver.vol_last[2] + (0.1*(float)(Driver.vol[2] - Driver.vol_last[2]));
+	//Driver.vol[3] = Driver.vol_last[3] + (0.1*(float)(Driver.vol[3] - Driver.vol_last[3]));
+	//
+	//Driver.cur[0] = (Driver.vol[0] - Driver.offset[0]) * 5.33;
+	//Driver.cur[1] = (Driver.vol[1] - Driver.offset[1]) * 5.33;
+	//Driver.cur[2] = (Driver.vol[2] - Driver.offset[2]) * 5.33;
+	//Driver.cur[3] = (Driver.vol[3] - Driver.offset[3]) * 5.33;
+	//
+	//if(Driver.cur[0]<5) Driver.cur[0]=0;
+	//if(Driver.cur[1]<5) Driver.cur[1]=0;
+	//if(Driver.cur[2]<5) Driver.cur[2]=0;
+	//if(Driver.cur[3]<5) Driver.cur[3]=0;
 }
 void chek_DriverCurrent(int x)
 {
 	if (Driver.cur[x]>=2000)
 	{
 		Driver.count_H[x] ++;
-		if (Driver.count_H[x] >80)// && count<200)
+		if (Driver.count_H[x] >200)// && count<200)
 		{
 			Driver.cur_alarm[x] = 1;
 			Driver.count_H[x] = 0;

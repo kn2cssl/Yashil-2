@@ -391,12 +391,12 @@ static tc_callback_t tc_tce0_ccd_callback;
  * This function will handle interrupt on Timer Counter E0 overflow and
  * call the callback function.
  */
-ISR(TCE0_OVF_vect)
-{
-	if (tc_tce0_ovf_callback) {
-		tc_tce0_ovf_callback();
-	}
-}
+//ISR(TCE0_OVF_vect)
+//{
+	//if (tc_tce0_ovf_callback) {
+		//tc_tce0_ovf_callback();
+	//}
+//}
 
 /**
  * \internal
