@@ -157,21 +157,12 @@ int main (void)
 			if (flg_2min)
 			{
 				change_ADC=3;
-				ADCA_init();			
-								
-			//}
-			//if (flg_2min10ms<=10)
-			//{
-				//adc = adc +(adc_get_unsigned_result(&ADCA,ADC_CH0)-adc)*0.01;
-				adc = adc_get_unsigned_result(&ADCA,ADC_CH0);				
-			//}
-			//else if (flg_2min10ms>10)
-			//{
+				ADCA_init();
+				adc = adc_get_unsigned_result(&ADCA,ADC_CH0);
 				change_ADC=6;
 				ADCA_init();
-				//flg_2min10ms=0;
-			//}
-			flg_2min=0;}
+				flg_2min=0;
+			}
 		    if (adc<=2470 && adc>=1250)//10 volt battery voltage feedback
 		    {
 			    Buzzer_PORT.OUTSET = Buzzer_PIN_bm;
@@ -331,7 +322,7 @@ ISR(TCE1_OVF_vect)//1ms
 	if (t_1ms>=60000)
 	{
 		flg_2min=1;
-		flg_2min10ms++;
+		//flg_2min10ms++;
 		t_1ms=0;
 		
 	}
