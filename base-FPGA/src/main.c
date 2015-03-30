@@ -47,6 +47,7 @@ int wireless_reset=0;
 float adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0;
 
+
 ////////////////////////////////////////current defines
 struct Driver
 {
@@ -73,19 +74,12 @@ int cur_allow=0;
 int current_ov=0;
 int flg_alarm=0;
 int t,t_10ms=0;
-int bat_count=0,battery_alarm=0;
+int bat_count=0,battery_alarm=0,battery_low=0;
 //////////////////////////////////////////////
+
 int Robot_Select,Robot_Select_Last;
 int Test_Data[8];
 int time2sec=0;
- struct rpm_ready
- {
-	 uint8_t data_permit;
-	 signed int Ma;
-	 signed int Mb;
- };
- struct rpm_ready rpm_ready[4];
-
 char ctrlflg=0,full_charge=0;;
 uint64_t flag2sec=0;
 int i=0;
@@ -176,7 +170,14 @@ int main (void)
 					{
 						battery_alarm=1;
 						bat_count=0;
+						battery_low=1;
 					}
+				}
+				else
+				{
+					 battery_alarm=0;
+					 bat_count=0;
+					 battery_low=0;
 				}
 			} 
 			
@@ -186,6 +187,7 @@ int main (void)
 			Buzzer_PORT.OUTSET = Buzzer_PIN_bm;			
 			else
 			Buzzer_PORT.OUTCLR = Buzzer_PIN_bm;
+
 			
 			////////////////////////////////////////////////////////////////////////////////SHOOT
 			PORTC_OUTCLR=KCK_SH_PIN_bm;
@@ -227,7 +229,7 @@ int main (void)
  					flg_dir = 1;
 // 				}
 			}
-			
+
 			if (free_wheel >= 500 )
 			{
 				NRF_init();
@@ -236,15 +238,6 @@ int main (void)
 			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
 			else
 			 LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
-
-	  ////SEND TEST DATA TO FT232
-	  //char str1[20];
-	  //uint8_t count1 = sprintf(str1,"%d\r",(int)adc);
-	  //
-	  //for (uint8_t i=0;i<count1;i++)
-	  //{
-	  //usart_putchar(&USARTE0,str1[i]);
-	  //}
 	  }
 }
 
@@ -334,8 +327,6 @@ ISR(TCE1_OVF_vect)//1ms
 		//{
 			//flg_alarm=1;t_alarm=0;
 		//}
-		
-		
 	}
 	
 	t_1ms++;
@@ -359,8 +350,6 @@ ISR(TCE1_OVF_vect)//1ms
 		wireless_reset=0;
 		//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 	}
-
-
 	time2sec++;
 	//if (time2sec>=10)
 	//{
@@ -467,7 +456,7 @@ ISR(TCD0_OVF_vect)
 
 ISR(TCD0_CCA_vect)
 {   
-	if ( free_wheel>100 || current_ov )
+	if ( free_wheel>100 || current_ov || battery_low )
 	{
 		Robot_D[RobotID].M0a = 1;
 		Robot_D[RobotID].M0b = 2;
@@ -477,126 +466,173 @@ ISR(TCD0_CCA_vect)
 	switch (motor_num)
 	{
 		case 0 :
+		//MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
+		if(((CLK_par_PORT.IN && CLK_par_bm)))
+		{
+			FPGA_DATA_PORT.OUT = 0xAA;//low byte
+			//PARITY_PORT.OUTCLR = PARITY_bm;
+			STARTBIT_PORT.OUTSET = STARTBIT_bm;
+			motor_num++;
+			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
+		}
+		break;
+		case 1:
+		{
+			motor_num++;
+			STARTBIT_PORT.OUTSET = STARTBIT_bm;
+		}
+		break;
+		//case 2 :
+		//MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
+		//if(((CLK_par_PORT.IN && CLK_par_bm)))
+		//{
+			//FPGA_DATA_PORT.OUT = 0x55;
+			//PARITY_PORT.OUTSET = PARITY_bm;
+			//STARTBIT_PORT.OUTSET = STARTBIT_bm;
+			//motor_num++;
+			////PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
+		//}
+		//break;
+		//case 3:
+		//{
+			//motor_num++;
+		//}
+		//break;
+		case 2 :
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0b;//low byte
 			PARITY_PORT.OUTCLR = PARITY_bm;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
 			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
 			}
 		break;
-		case 1:
+		case 3:
 		     {
-				 motor_num++; 
+				 motor_num++;
+				 STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			 }
 		break;
-		case 2 :
+		case 4 :
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0a;
 			PARITY_PORT.OUTSET = PARITY_bm;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
 			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
 			}
 		break;
-		case 3:
-			{
-			motor_num++;
-			}
-			break;
-		case 4 :
-			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
-			{
-			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1b;
-			rpm_ready[0].data_permit=1;
-			rpm_ready[1].data_permit=0;
-			PARITY_PORT.OUTCLR = PARITY_bm;
-			motor_num++;
-			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
-			}
-			break;
 		case 5:
 			{
 			motor_num++;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
-		    break;
+			break;
 		case 6 :
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1a;
-			PARITY_PORT.OUTSET = PARITY_bm;
+			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1b;
+			PARITY_PORT.OUTCLR = PARITY_bm;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
-			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
+			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
 			}
 			break;
 		case 7:
 			{
 			motor_num++;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 		    break;
 		case 8 :
+			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
+			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			{
+			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1a;
+			PARITY_PORT.OUTSET = PARITY_bm;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
+			motor_num++;
+			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
+			}
+			break;
+		case 9:
+			{
+			motor_num++;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
+			}
+		    break;
+		case 10 :
 			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2b;
 				PARITY_PORT.OUTCLR = PARITY_bm;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
 				//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
 			}
 		    break;
-		case 9:
+		case 11:
 			{
 				motor_num++;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 			break;
-		case 10 :
+		case 12 :
 			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2a;
 				PARITY_PORT.OUTSET = PARITY_bm;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
 				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
 			}
 			break;
-		case 11:
-			{
-			motor_num++;
-			}
-			break;
-		case 12 :
-			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
-			if(((CLK_par_PORT.IN && CLK_par_bm)))
-			{
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3b;
-				PARITY_PORT.OUTCLR = PARITY_bm;
-				motor_num++;
-				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
-			}
-			break;
 		case 13:
 			{
-				motor_num++;
+			motor_num++;
+			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 			break;
 		case 14 :
 			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-				//LED_White_PORT.OUTTGL = LED_White_PIN_bm;
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3a;
-				PARITY_PORT.OUTSET = PARITY_bm;
+				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3b;
+				PARITY_PORT.OUTCLR = PARITY_bm;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
-				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
+				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
 			}
 			break;
 		case 15:
 			{
+				motor_num++;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
+			}
+			break;
+		case 16 :
+			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
+			if(((CLK_par_PORT.IN && CLK_par_bm)))
+			{
+				//LED_White_PORT.OUTTGL = LED_White_PIN_bm;
+				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3a;
+				PARITY_PORT.OUTSET = PARITY_bm;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
+				motor_num++;
+				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
+			}
+			break;
+		case 17:
+			{
 				motor_num=0;
+				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			}
 			break;
 		}
@@ -703,6 +739,7 @@ void chek_DriverCurrent(int x)
 void data_transmission (void)
 {
 	//transmitting data to wireless board/////////////////////////////////////////////////
+
 			Test_Data[7] = adc*0.4761;//battery voltage
 			
 	
@@ -725,6 +762,7 @@ void data_transmission (void)
 	Buf_Tx_L[5]  = Test_Data[2] & 0xFF;//Robot_D[RobotID].M2b;//			//drive test data
 	Buf_Tx_L[6]  = (Test_Data[3]>> 8) & 0xFF;//Robot_D[RobotID].M3a;//	//drive test data
 	Buf_Tx_L[7]  = Test_Data[3] & 0xFF;//Robot_D[RobotID].M3b;//			//drive test data
+
 
 	//Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
 	//Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
