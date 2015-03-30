@@ -41,11 +41,11 @@ unsigned char Buf_Rx_L[_Buffer_Size] ;
 char Buf_Tx_L[_Buffer_Size];
 char Address[_Address_Width] = { 0x11, 0x22, 0x33, 0x44, 0x55};
 int motor_num=0,test=0;
-uint32_t kck_time_dir,time_test,kck_time_chip,charge_time=0;
+uint32_t kck_time_dir,time_test,kck_time_chip,charge_time=0,kck_time_sw=0;;
 int free_wheel=0;
 int wireless_reset=0;
 float adc =0;
-int flg_dir=0, flg_chip=0, charge_flg=0;
+int flg_dir=0, flg_chip=0, charge_flg=0,flg_sw=0;
 
 
 ////////////////////////////////////////current defines
@@ -166,7 +166,7 @@ int main (void)
 				if (adc<=2470 && adc>=1250)//10 volt battery voltage feedback   2500-->9.3
 				{
 					bat_count++;
-					if (bat_count>=50)
+					if (bat_count>=100)
 					{
 						battery_alarm=1;
 						bat_count=0;
@@ -198,7 +198,7 @@ int main (void)
 			}
 			else // if(((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp==0)) 
 			{
-				if((flg_chip || flg_dir)==0)//(flg_dir==0)  //not tested!
+				if((flg_chip || flg_dir || flg_sw || battery_low)==0)//(flg_dir==0)  //not tested!
 					{
 					tc_enable_cc_channels(&TCC0,TC_CCCEN);
 					}
@@ -226,7 +226,7 @@ int main (void)
 				//flg_chip = 1;
 // 				if(KCK_Sens)
 // 				{
- 					flg_dir = 1;
+ 					flg_sw = 1;
 // 				}
 			}
 
@@ -266,8 +266,6 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 			  Robot_D[RobotID].KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
 			  Robot_D[RobotID].CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			  Robot_D[RobotID].ASK  = Buf_Rx_L[31];//0b00000000
-			  
-
 			  
 			  if (Robot_D[RobotID].ASK != Robot_Select)
 			  {
@@ -334,7 +332,7 @@ ISR(TCE1_OVF_vect)//1ms
 	{
 		flg_2min=1;				
 	}
-	else if (t_1ms>=60100)
+	else if (t_1ms>=61000)
 	{
 		flg_2min10ms=1;
 		t_1ms=0;
@@ -348,7 +346,6 @@ ISR(TCE1_OVF_vect)//1ms
 	{
 		NRF_init();
 		wireless_reset=0;
-		//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 	}
 	time2sec++;
 	//if (time2sec>=10)
@@ -366,29 +363,44 @@ ISR(TCE1_OVF_vect)//1ms
 	flg_dir = 1;
 	flg_chip = 0;
 	}
+	
+	if(flg_sw)
+	{
+		if(kck_time_sw<3000)
+		{
+			kck_time_sw++;
+			tc_disable_cc_channels(&TCC0,TC_CCCEN);
+			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
+			tc_disable_cc_channels(&TCC0,TC_CCDEN);
+			else
+			{
+			tc_enable_cc_channels(&TCC0,TC_CCDEN);
+			KCK_Speed_DIR(KCK_SPEED_LOW);
+			full_charge=0;
+			charge_flg=0;
+			charge_time=0;
+			}
+		}
+	    else 
+		{
+			if(battery_low==0)
+			{
+			KCK_Speed_DIR(KCK_SPEED_OFF);
+			tc_enable_cc_channels(&TCC0,TC_CCCEN);
+		    kck_time_sw=0; kck_time_dir=0; flg_sw=0;}
+		}
+	}
 	if(flg_dir)
 	{    
 		if(kck_time_dir<100)
 		{
 			kck_time_dir++;
 			tc_disable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
 				tc_disable_cc_channels(&TCC0,TC_CCDEN);
 			else
 			{
-				if(KCK_DSH_SW)
-				{
-					//if(full_charge || charge_flg)
-					//{
-					tc_enable_cc_channels(&TCC0,TC_CCDEN);
-					KCK_Speed_DIR(KCK_SPEED_HI);
-					full_charge=0;
-					charge_flg=0;
-					charge_time=0;
-					//}
-				}
-				else if(charge_flg)//full_charge ||
+				if(charge_flg)//full_charge ||
 				{
 					tc_enable_cc_channels(&TCC0,TC_CCDEN);
 					KCK_Speed_DIR(Robot_D[RobotID].KCK);
@@ -400,10 +412,12 @@ ISR(TCE1_OVF_vect)//1ms
 		}
 		
 		else {
+			if(battery_low==0)
+			{
 			KCK_Speed_DIR(KCK_SPEED_OFF);
 			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 			kck_time_dir=0; flg_dir=0;}
+		}
 	}
 	
 	if(flg_chip)
@@ -417,13 +431,8 @@ ISR(TCE1_OVF_vect)//1ms
 			tc_disable_cc_channels(&TCC1,TC_CCAEN);
 			else
 			{
-				if(KCK_DSH_SW)
-				{
-					tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					KCK_Speed_CHIP(KCK_SPEED_HI);
-					full_charge=0;
-				}
-				else if(full_charge==1)
+				
+			    if(full_charge==1)
 				{
 					tc_enable_cc_channels(&TCC1,TC_CCAEN);
 					KCK_Speed_CHIP(Robot_D[RobotID].CHP);
@@ -432,10 +441,12 @@ ISR(TCE1_OVF_vect)//1ms
 			}
 		}
 		else {
+			if(battery_low==0)
+			{
 			KCK_Speed_CHIP(KCK_SPEED_OFF);
 			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 		kck_time_chip=0; flg_chip=0;}
+		}
 	}
 }
 //ISR(TCE0_OVF_vect)//10s
