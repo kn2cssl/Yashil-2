@@ -293,7 +293,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	  }
 	  if((status_L&_TX_DS) == _TX_DS)
 	  {
-		  LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		  //LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 		  wireless_reset=0;
 	  }
 	  
@@ -473,6 +473,19 @@ ISR(TCD0_CCA_vect)
 		Robot_D[RobotID].M0b = 2;
 		Robot_D[RobotID].M1a = 3;
 		Robot_D[RobotID].M1b = 4;
+	}
+	if(SW_TEST)
+	{
+		//////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
+		Robot_D[RobotID].M0b  = 0xB8;//0X18;//-1000//01;//low37121
+		Robot_D[RobotID].M0a  = 0x0B;//0XFC;//high
+		Robot_D[RobotID].M1b  = 0XB8;//2000//ghalat17325
+		Robot_D[RobotID].M1a  = 0X0B;
+		Robot_D[RobotID].M2b  = 0XB8;//1000//low13703
+		Robot_D[RobotID].M2a  = 0X0B;//high
+		Robot_D[RobotID].M3b  = 0xB8;//3000//32;//ghalat30258
+		Robot_D[RobotID].M3a  = 0X0B;//high
+		//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 	}
 	switch (motor_num)
 	{
