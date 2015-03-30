@@ -68,7 +68,7 @@
 #define KCK_CHARGE_ON  0
 
 #define KCK_SPEED_OFF 0x00
-#define KCK_SPEED_LOW 0x64
+#define KCK_SPEED_LOW 0x07
 #define KCK_SPEED_HI  0xFF
 #define KCK_SPEED_RX Robot_D[RobotID].KCK
 #define KCK_Speed_CHIP(_A_) TCC1_CCA=_A_; // PORTC_OUT =(PORTC_OUT & (~KCK_DIR_PIN_bm)) | (_A_<<KCK_DIR_PIN_bp) // _delay_ms(100); TCC0_CCA=0; //KCK_Charge( KCK_CHARGE_ON) KCK_Charge( KCK_CHARGE_OFF) //PORTC_OUT =TCC0_CNT=_A_; ;
