@@ -766,18 +766,6 @@ void data_transmission (void)
 
 			Test_Data[7] = adc*0.4761;//battery voltage
 			
-	
-// 	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;	//drive test data
-// 	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;			//drive test data
-// 	Buf_Tx_L[2]  = Robot_D[RobotID].M1a;//(Test_Data[1]>> 8) & 0xFF;	//drive test data
-// 	Buf_Tx_L[3]  = Robot_D[RobotID].M1b;//Test_Data[1] & 0xFF;			//drive test data
-// 	Buf_Tx_L[4]  = Robot_D[RobotID].M2a;//(Test_Data[2]>> 8) & 0xFF;	//drive test data
-// 	Buf_Tx_L[5]  = Robot_D[RobotID].M2b;//Test_Data[2] & 0xFF;			//drive test data
-// 	Buf_Tx_L[6]  = Robot_D[RobotID].M3a;//(Test_Data[3]>> 8) & 0xFF;	//drive test data
-// 	Buf_Tx_L[7]  = Robot_D[RobotID].M3b;//Test_Data[3] & 0xFF;			//drive test data
-// 	 		//Test_Data[0] = adc/12;
-// 	 		//Test_Data[1] = time_test;
-	//
 	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//Robot_D[RobotID].M0a;//	//drive test data
 	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;//Robot_D[RobotID].M0b;//			//drive test data
 	Buf_Tx_L[2]  = (Test_Data[1]>> 8) & 0xFF;//Robot_D[RobotID].M1a;//	//drive test data
