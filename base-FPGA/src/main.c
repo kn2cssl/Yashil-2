@@ -42,8 +42,7 @@ char Buf_Tx_L[_Buffer_Size];
 char Address[_Address_Width] = { 0x11, 0x22, 0x33, 0x44, 0x55};
 int motor_num=0,test=0;
 uint32_t kck_time_dir,time_test,kck_time_chip,charge_time=0,kck_time_sw=0;;
-int Free_Wheel=0;
-bool Free_Wheel_Flag = false;
+int free_wheel=0;
 int wireless_reset=0;
 float adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0,flg_sw=0;
@@ -150,13 +149,13 @@ int main (void)
 			Test_Data[2]=(int)Driver.cur[2]; 
 			Test_Data[3]=(int)Driver.cur[3];			
 			///////////////////////////////////////////////////////////////////////////BUZZER
-			if (Free_Wheel_Flag)
+			if (flg_2min)
 			{
 				change_ADC=3;
 				ADCA_init();
 				flg_2min=0;
 			}
-			if (!Free_Wheel_Flag)
+			if (flg_2min10ms)
 			{
 				change_ADC=6;
 				ADCA_init();
@@ -164,7 +163,7 @@ int main (void)
 			}
 			if(change_ADC==3)
 			{
-				adc = adc + (0.01*((float)adc_get_unsigned_result(&ADCA,ADC_CH0)-adc));
+				adc = adc + (0.2*((float)adc_get_unsigned_result(&ADCA,ADC_CH0)-adc));
 				if (adc<=2470 && adc>=1250)//10 volt battery voltage feedback   2500-->9.3
 				{
 					bat_count++;
@@ -233,7 +232,7 @@ int main (void)
 // 				}
 			}
 
-			if (Free_Wheel >= 500 )
+			if (free_wheel >= 500 )
 			{
 				NRF_init();
 				 wdt_reset();
@@ -256,7 +255,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		   wdt_reset();
 		  //1) read payload through SPI,
 		  NRF24L01_L_Read_RX_Buf(Buf_Rx_L, _Buffer_Size);
-		  Free_Wheel=0 ;
+		  free_wheel=0 ;
 		  if((Buf_Rx_L[0] == 0x0A && (RobotID < 3 || (RobotID<9 && RobotID>5)))|| (Buf_Rx_L[0] == 0xA0 && (RobotID > 8 || (RobotID<6 && RobotID>2))))
 		  {
 			  LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
@@ -347,7 +346,7 @@ ISR(TCE1_OVF_vect)//1ms
 	
 	timectrl++;
 	wireless_reset++;
-	Free_Wheel++;
+	free_wheel++;
 
 	if(wireless_reset>=20)
 	{
@@ -513,7 +512,7 @@ ISR(TCD0_OVF_vect)
 ISR(TCD0_CCA_vect)
 
 {
-	if ( Free_Wheel>100 || current_ov || battery_low )
+	if ( free_wheel>100 || current_ov || battery_low )
 
 	{
 		Robot_D[RobotID].M0a = 1;
@@ -521,13 +520,6 @@ ISR(TCD0_CCA_vect)
 		Robot_D[RobotID].M1a = 3;
 		Robot_D[RobotID].M1b = 4;
 	}
-
-	if (Robot_D[RobotID].M0a == 1 &&
-	Robot_D[RobotID].M0b == 2 &&
-	Robot_D[RobotID].M1a == 3 &&
-	Robot_D[RobotID].M1b == 4)Free_Wheel_Flag = true ;
-	else Free_Wheel_Flag = false ;
-
 	if(SW_TEST)
 	{
 		//////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
@@ -737,6 +729,14 @@ void NRF_init (void)
 	NRF24L01_L_Flush_TX();
 	NRF24L01_L_Flush_RX();
 	NRF24L01_L_CE_LOW;
+	// 	    if (RobotID < 3)
+	// 	    NRF24L01_L_Init_milad(_TX_MODE, _CH_0, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
+	// 	    else if(RobotID > 2 && RobotID < 6)
+	// 	    NRF24L01_L_Init_milad(_TX_MODE, _CH_1, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
+	// 	    else if (RobotID > 5 && RobotID < 9)
+	// 	    NRF24L01_L_Init_milad(_TX_MODE, _CH_2, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
+	// 	    else
+	// 	    NRF24L01_L_Init_milad(_TX_MODE, _CH_3, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
 	if (RobotID < 6)
 	NRF24L01_L_Init_milad(_RX_MODE, _CH_1, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
 	else if(RobotID > 5)
@@ -803,6 +803,7 @@ void chek_DriverCurrent(int x)
 	else	{Driver.count_H[x] = 0;Driver.count_L[x] = 0;}
 		
 }
+
 void data_transmission (void)
 {
 	//transmitting data to wireless board/////////////////////////////////////////////////
@@ -829,5 +830,8 @@ void data_transmission (void)
 	Buf_Tx_L[15] = Test_Data[7] & 0xFF;			// battery voltage
 	Buf_Tx_L[16] = adc/12;						//battery adc
 	
+
+	//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 	NRF24L01_L_Write_TX_Buf(Buf_Tx_L, _Buffer_Size);
+	//NRF24L01_L_RF_TX();
 }
