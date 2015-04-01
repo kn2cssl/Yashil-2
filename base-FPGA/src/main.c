@@ -103,7 +103,8 @@ int main (void)
 	ADCA_init();
 	ADCB_init();
 	//wdt_enable();
-
+	//wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_16CLK);
+	
 	// Globally enable interrupts
 	sei();
 
@@ -121,7 +122,7 @@ int main (void)
 	while(1)
 	  {  
 		    asm("wdr");
-		
+			 wdt_reset();
 		///////////////////////////////////////////////////////////////// motor current sensor
 		if(t_10ms)
 		{
@@ -215,6 +216,7 @@ int main (void)
 				}
 				if (Robot_D[RobotID].CHP)
 				{
+					LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 					if(KCK_Sens || (Robot_D[RobotID].CHP%2))
 					{
 					flg_chip = 1;	
@@ -233,12 +235,14 @@ int main (void)
 			if (free_wheel >= 500 )
 			{
 				NRF_init();
+				 wdt_reset();
 			}
-			if(KCK_Sens)
-			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
-			else
-			 LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
+			//if(KCK_Sens)
+			 //LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
+			//else
+			 //LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
 	  }
+	   wdt_reset();
 }
 
 ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt Pin
@@ -248,6 +252,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	  {
 		  LED_White_PORT.OUTTGL = LED_White_PIN_bm;
 		  wireless_reset=0;
+		   wdt_reset();
 		  //1) read payload through SPI,
 		  NRF24L01_L_Read_RX_Buf(Buf_Rx_L, _Buffer_Size);
 		  free_wheel=0 ;
@@ -307,6 +312,7 @@ char timectrl;//,time2sec;
 long int t_alarm;
 ISR(TCE1_OVF_vect)//1ms
 {
+	 wdt_reset();
 	t_allow++;
 	if(t_allow>1000)   cur_allow=1;
 	
@@ -353,6 +359,44 @@ ISR(TCE1_OVF_vect)//1ms
 		//flag2sec++;
 		//time2sec=0;
 	//}
+		
+		if((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp)
+		{
+		full_charge=1;
+		tc_disable_cc_channels(&TCC0,TC_CCCEN);
+		
+		}
+		else
+		{
+		if((flg_chip || flg_dir || flg_sw || battery_low)==0)//(flg_dir==0)  //not tested!
+		{
+		tc_enable_cc_channels(&TCC0,TC_CCCEN);
+		//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		}
+		}
+		if (charge_flg)//full_charge ||
+		{
+			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+			if (Robot_D[RobotID].KCK )
+			{
+				if( KCK_Sens || (Robot_D[RobotID].KCK%2))
+				{
+					flg_dir = 1;
+				}
+			}
+			if (Robot_D[RobotID].CHP)
+			{
+				LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+				if(KCK_Sens || (Robot_D[RobotID].CHP%2))
+				{
+					flg_chip = 1;
+				}
+			}
+		}
+		if (KCK_DSH_SW )
+		{
+			flg_sw = 1;
+		}
 	
 	charge_time++;
 	if(charge_time>=3100)
@@ -383,11 +427,11 @@ ISR(TCE1_OVF_vect)//1ms
 		}
 	    else 
 		{
-			if(battery_low==0)
-			{
+			//if(battery_low==0)
+			//{
 			KCK_Speed_DIR(KCK_SPEED_OFF);
 			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-		    kck_time_sw=0; kck_time_dir=0; flg_sw=0;}
+		    kck_time_sw=0; kck_time_dir=0; flg_sw=0;//}
 		}
 	}
 	if(flg_dir)
@@ -412,11 +456,11 @@ ISR(TCE1_OVF_vect)//1ms
 		}
 		
 		else {
-			if(battery_low==0)
-			{
+			//if(battery_low==0)
+			//{
 			KCK_Speed_DIR(KCK_SPEED_OFF);
 			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			kck_time_dir=0; flg_dir=0;}
+			kck_time_dir=0; flg_dir=0;//}
 		}
 	}
 	
@@ -441,11 +485,11 @@ ISR(TCE1_OVF_vect)//1ms
 			}
 		}
 		else {
-			if(battery_low==0)
-			{
+			//if(battery_low==0)
+			//{
 			KCK_Speed_CHIP(KCK_SPEED_OFF);
 			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-		kck_time_chip=0; flg_chip=0;}
+		kck_time_chip=0; flg_chip=0;//}
 		}
 	}
 }
@@ -467,7 +511,7 @@ ISR(TCD0_OVF_vect)
 
 ISR(TCD0_CCA_vect)
 {   
-	if ( free_wheel>100 || current_ov || battery_low )
+	if ( free_wheel>100 || current_ov)// || battery_low )
 	{
 		Robot_D[RobotID].M0a = 1;
 		Robot_D[RobotID].M0b = 2;
@@ -477,15 +521,14 @@ ISR(TCD0_CCA_vect)
 	if(SW_TEST)
 	{
 		//////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
-		Robot_D[RobotID].M0b  = 0xB8;//0X18;//-1000//01;//low37121
-		Robot_D[RobotID].M0a  = 0x0B;//0XFC;//high
-		Robot_D[RobotID].M1b  = 0XB8;//2000//ghalat17325
+		Robot_D[RobotID].M0b  = 0xB8;//low
+		Robot_D[RobotID].M0a  = 0x0B;//high ---> speed=3000
+		Robot_D[RobotID].M1b  = 0XB8;
 		Robot_D[RobotID].M1a  = 0X0B;
-		Robot_D[RobotID].M2b  = 0XB8;//1000//low13703
-		Robot_D[RobotID].M2a  = 0X0B;//high
-		Robot_D[RobotID].M3b  = 0xB8;//3000//32;//ghalat30258
-		Robot_D[RobotID].M3a  = 0X0B;//high
-		//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		Robot_D[RobotID].M2b  = 0XB8;
+		Robot_D[RobotID].M2a  = 0X0B;
+		Robot_D[RobotID].M3b  = 0xB8;
+		Robot_D[RobotID].M3a  = 0X0B;
 	}
 	switch (motor_num)
 	{
@@ -676,7 +719,6 @@ int parity_calc(signed int data)
 void NRF_init (void)
 {
 	NRF24L01_L_CE_LOW;       //disable transceiver modes
-
 	SPI_Init();
 
 	_delay_us(10);
