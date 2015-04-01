@@ -43,6 +43,8 @@ char Address[_Address_Width] = { 0x11, 0x22, 0x33, 0x44, 0x55};
 int motor_num=0,test=0;
 uint32_t kck_time_dir,time_test,kck_time_chip,charge_time=0,kck_time_sw=0;;
 int free_wheel=0;
+int free_wheel_flag = 0;
+int adc_change = 0;
 int wireless_reset=0;
 float adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0,flg_sw=0;
@@ -149,17 +151,19 @@ int main (void)
 			Test_Data[2]=(int)Driver.cur[2]; 
 			Test_Data[3]=(int)Driver.cur[3];			
 			///////////////////////////////////////////////////////////////////////////BUZZER
-			if (flg_2min)
+			if (free_wheel_flag && adc_change)
 			{
 				change_ADC=3;
 				ADCA_init();
 				flg_2min=0;
+				adc_change = 0 ;
 			}
-			if (flg_2min10ms)
+			if (!free_wheel_flag && !adc_change)
 			{
 				change_ADC=6;
 				ADCA_init();
-				flg_2min10ms=0;				
+				flg_2min10ms=0;	
+				adc_change = 1;			
 			}
 			if(change_ADC==3)
 			{
@@ -334,25 +338,21 @@ ISR(TCE1_OVF_vect)//1ms
 	}
 	
 	t_1ms++;
-	if (t_1ms==60000)
-	{
-		flg_2min=1;				
-	}
-	else if (t_1ms>=61000)
-	{
-		flg_2min10ms=1;
-		t_1ms=0;
-	}
+	//if (t_1ms==60000)
+	//{
+		//flg_2min=1;				
+	//}
+	//else if (t_1ms>=61000)
+	//{
+		//flg_2min10ms=1;
+		//t_1ms=0;
+	//}
 	
 	timectrl++;
 	wireless_reset++;
 	free_wheel++;
 
-	if(wireless_reset>=20)
-	{
-		NRF_init();
-		wireless_reset=0;
-	}
+	
 	time2sec++;
 	//if (time2sec>=10)
 	//{
@@ -368,7 +368,7 @@ ISR(TCE1_OVF_vect)//1ms
 		}
 		else
 		{
-		if((flg_chip || flg_dir || flg_sw || battery_low)==0)//(flg_dir==0)  //not tested!
+		if((flg_chip || flg_dir || flg_sw ))//|| battery_low)==0)//(flg_dir==0)  //not tested!
 		{
 		tc_enable_cc_channels(&TCC0,TC_CCCEN);
 		//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
@@ -396,6 +396,12 @@ ISR(TCE1_OVF_vect)//1ms
 		if (KCK_DSH_SW )
 		{
 			flg_sw = 1;
+		}
+		
+		if(wireless_reset>=20)
+		{
+			NRF_init();
+			wireless_reset=0;
 		}
 	
 	charge_time++;
@@ -518,6 +524,18 @@ ISR(TCD0_CCA_vect)
 		Robot_D[RobotID].M1a = 3;
 		Robot_D[RobotID].M1b = 4;
 	}
+	
+	if (Robot_D[RobotID].M0a == 1  &&
+		Robot_D[RobotID].M0b == 2  &&
+		Robot_D[RobotID].M1a == 3  &&
+		Robot_D[RobotID].M1b == 4)
+		{
+			free_wheel_flag = 1;
+		}
+		
+	else
+		free_wheel_flag = 0;
+	
 	if(SW_TEST)
 	{
 		//////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
@@ -807,6 +825,7 @@ void data_transmission (void)
 	//transmitting data to wireless board/////////////////////////////////////////////////
 
 			Test_Data[7] = adc*0.4761;//battery voltage
+			Test_Data[0] = adc*0.4761;//battery voltage
 			
 	
 // 	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;	//drive test data
