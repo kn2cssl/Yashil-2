@@ -169,7 +169,7 @@ int main (void)
 			if(change_ADC==3)
 			{
 				adc = adc + (0.2*((float)adc_get_unsigned_result(&ADCA,ADC_CH0)-adc));
-				if (adc<=2470 && adc>=1600)//10 volt battery voltage feedback   2500-->9.3
+				if (adc<=2525 && adc>=1600)//10 volt battery voltage feedback   2500-->9.3
 				{
 					bat_count++;
 					if (bat_count>=100)
@@ -813,7 +813,7 @@ void chek_DriverCurrent(int x)
 	if (Driver.cur[x]>=2000)
 	{
 		Driver.count_H[x] ++;
-		if (Driver.count_H[x] >200)// && count<200)
+		if (Driver.count_H[x] >300)// && count<200)
 		{
 			Driver.cur_alarm[x] = 1;
 			Driver.count_H[x] = 0;
@@ -822,7 +822,7 @@ void chek_DriverCurrent(int x)
 	else if(Driver.cur[x]>=1000)
 	{
 		Driver.count_L[x] ++;
-		if (Driver.count_L[x] >800)// && count<200)
+		if (Driver.count_L[x] >1000)// && count<200)
 		{
 			Driver.cur_alarm[x] = 1;
 			Driver.count_L[x] = 0;
