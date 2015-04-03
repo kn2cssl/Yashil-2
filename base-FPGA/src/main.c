@@ -104,8 +104,8 @@ int main (void)
 	USARTE0_init();
 	ADCA_init();
 	ADCB_init();
-	//wdt_enable();
-	//wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_16CLK);
+	wdt_enable();
+	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_16CLK);
 	
 	// Globally enable interrupts
 	sei();
@@ -126,6 +126,7 @@ int main (void)
 		    asm("wdr");
 			 wdt_reset();
 		///////////////////////////////////////////////////////////////// motor current sensor
+		
 		if(t_10ms)
 		{
 			
@@ -193,7 +194,6 @@ int main (void)
 			else
 			Buzzer_PORT.OUTCLR = Buzzer_PIN_bm;
 
-			
 			////////////////////////////////////////////////////////////////////////////////SHOOT
 			PORTC_OUTCLR=KCK_SH_PIN_bm;
 			if(((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp))
@@ -236,12 +236,16 @@ int main (void)
  					flg_sw = 1;
 // 				}
 			}
-
-			if (free_wheel >= 500 )
+			//if (free_wheel >= 10000 )
+			//{
+				//NRF_init();
+			//}
+			if(wireless_reset>=50)
 			{
-				NRF_init();
-				 
+			NRF_init();
+			wireless_reset=0;
 			}
+			LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 			if(KCK_Sens)
 			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
 			else
@@ -317,8 +321,8 @@ char timectrl;//,time2sec;
 long int t_alarm;
 ISR(TCE1_OVF_vect)//1ms
 {
+	wdt_reset();
 	charge_count++;
-	
 		shoot_alarm_time++;
 		
 		if (shoot_alarm_time>=200)
@@ -403,12 +407,12 @@ ISR(TCE1_OVF_vect)//1ms
 		{
 			flg_sw = 1;
 		}
-		
-		if(wireless_reset>=20)
-		{
-			NRF_init();
-			wireless_reset=0;
-		}
+		//
+		//if(wireless_reset>=50)
+		//{
+			//NRF_init();
+			//wireless_reset=0;
+		//}
 	
 	charge_time++;
 	if(charge_time>=3100)
@@ -553,6 +557,7 @@ ISR(TCD0_CCA_vect)
 		Robot_D[RobotID].M2a  = 0X0B;
 		Robot_D[RobotID].M3b  = 0xB8;
 		Robot_D[RobotID].M3a  = 0X0B;
+		//wdt_reset_mcu();
 	}
 	switch (motor_num)
 	{
@@ -727,6 +732,7 @@ ISR(TCD0_CCA_vect)
 			}
 			break;
 		}
+		
 	  ////motor_num++;
 	  ////if (motor_num>=16)
 	  ////motor_num=0;
