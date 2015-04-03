@@ -240,11 +240,11 @@ int main (void)
 			//{
 				//NRF_init();
 			//}
-			if(wireless_reset>=50)
-			{
-			NRF_init();
-			wireless_reset=0;
-			}
+			//if(wireless_reset>=30)
+			//{
+			//NRF_init();
+			//wireless_reset=0;
+			//}
 			LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 			if(KCK_Sens)
 			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
@@ -370,49 +370,49 @@ ISR(TCE1_OVF_vect)//1ms
 		//time2sec=0;
 	//}
 		
-		if(((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp))
-		{
-		full_charge=1;
-		tc_disable_cc_channels(&TCC0,TC_CCCEN);
-		charge_count=0;
-		}
-		else
-		{
-		if((flg_chip || flg_dir || flg_sw)==0)//|| battery_low)==0)//(flg_dir==0)  //not tested!
-		{
-		tc_enable_cc_channels(&TCC0,TC_CCCEN);
-		//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-		}
-		}
-		if (charge_flg)//full_charge ||
-		{
-			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-			if (Robot_D[RobotID].KCK )
-			{
-				if( KCK_Sens || (Robot_D[RobotID].KCK%2))
-				{
-					flg_dir = 1;
-				}
-			}
-			if (Robot_D[RobotID].CHP)
-			{
-				//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-				if(KCK_Sens || (Robot_D[RobotID].CHP%2))
-				{
-					flg_chip = 1;
-				}
-			}
-		}
-		if (KCK_DSH_SW )
-		{
-			flg_sw = 1;
-		}
-		//
-		//if(wireless_reset>=50)
+		//if(((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp))
 		//{
-			//NRF_init();
-			//wireless_reset=0;
+		//full_charge=1;
+		//tc_disable_cc_channels(&TCC0,TC_CCCEN);
+		//charge_count=0;
 		//}
+		//else
+		//{
+		//if((flg_chip || flg_dir || flg_sw)==0)//|| battery_low)==0)//(flg_dir==0)  //not tested!
+		//{
+		//tc_enable_cc_channels(&TCC0,TC_CCCEN);
+		////LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		//}
+		//}
+		//if (charge_flg)//full_charge ||
+		//{
+			////LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+			//if (Robot_D[RobotID].KCK )
+			//{
+				//if( KCK_Sens || (Robot_D[RobotID].KCK%2))
+				//{
+					//flg_dir = 1;
+				//}
+			//}
+			//if (Robot_D[RobotID].CHP)
+			//{
+				////LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+				//if(KCK_Sens || (Robot_D[RobotID].CHP%2))
+				//{
+					//flg_chip = 1;
+				//}
+			//}
+		//}
+		//if (KCK_DSH_SW )
+		//{
+			//flg_sw = 1;
+		//}
+		
+		if(wireless_reset>=30)
+		{
+			NRF_init();
+			wireless_reset=0;
+		}
 	
 	charge_time++;
 	if(charge_time>=3100)
