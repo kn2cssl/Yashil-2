@@ -76,7 +76,7 @@ int cur_allow=0;
 int current_ov=0;
 int flg_alarm=0,shoot_alarm_flg=0;
 int t,t_10ms=0;
-int bat_count=0,battery_alarm=0,battery_low=0;
+int bat_count=0,battery_alarm=0;
 //////////////////////////////////////////////
 
 int Robot_Select,Robot_Select_Last;
@@ -168,21 +168,19 @@ int main (void)
 			if(change_ADC==3)
 			{
 				adc = adc + (0.2*((float)adc_get_unsigned_result(&ADCA,ADC_CH0)-adc));
-				if (adc<=2470 && adc>=1250)//10 volt battery voltage feedback   2500-->9.3
+				if (adc<=2470 && adc>=1600)//10 volt battery voltage feedback   2500-->9.3
 				{
 					bat_count++;
 					if (bat_count>=100)
 					{
 						battery_alarm=1;
 						bat_count=0;
-						battery_low=1;
 					}
 				}
 				else
 				{
 					 battery_alarm=0;
 					 bat_count=0;
-					 battery_low=0;
 				}
 			} 
 			
