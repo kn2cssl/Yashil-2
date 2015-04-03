@@ -231,21 +231,17 @@ int main (void)
 			if (KCK_DSH_SW )
 			{
 				//flg_chip = 1;
-// 				if(KCK_Sens)
-// 				{
- 					flg_sw = 1;
-// 				}
+				// 				if(KCK_Sens)
+				// 				{
+				flg_sw = 1;
+				// 				}
 			}
 			//if (free_wheel >= 10000 )
 			//{
-				//NRF_init();
-			//}
-			//if(wireless_reset>=30)
-			//{
 			//NRF_init();
-			//wireless_reset=0;
 			//}
-			LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+
+			
 			if(KCK_Sens)
 			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
 			else
@@ -305,11 +301,11 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		  //3) read FIFO_STATUS to check if there are more payloads available in RX FIFO,
 		  //4) if there are more data in RX FIFO, repeat from step 1).
 	  }
-	  if((status_L&_TX_DS) == _TX_DS)
-	  {
-		  LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-		  wireless_reset=0;
-	  }
+// 	  if((status_L&_TX_DS) == _TX_DS)
+// 	  {
+// 		  LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+// 		  wireless_reset=0;
+// 	  }
 	  
 	  if ((status_L&_MAX_RT) == _MAX_RT)
 	  {
@@ -348,72 +344,15 @@ ISR(TCE1_OVF_vect)//1ms
 	}
 	
 	t_1ms++;
-	//if (t_1ms==60000)
-	//{
-		//flg_2min=1;				
-	//}
-	//else if (t_1ms>=61000)
-	//{
-		//flg_2min10ms=1;
-		//t_1ms=0;
-	//}
+
 	
 	timectrl++;
-	wireless_reset++;
+	
+
 	free_wheel++;
 
 	
-	time2sec++;
-	//if (time2sec>=10)
-	//{
-		//flag2sec++;
-		//time2sec=0;
-	//}
-		
-		//if(((KCK_Ch_Limit_PORT.IN & KCK_Ch_Limit_PIN_bm)>>KCK_Ch_Limit_PIN_bp))
-		//{
-		//full_charge=1;
-		//tc_disable_cc_channels(&TCC0,TC_CCCEN);
-		//charge_count=0;
-		//}
-		//else
-		//{
-		//if((flg_chip || flg_dir || flg_sw)==0)//|| battery_low)==0)//(flg_dir==0)  //not tested!
-		//{
-		//tc_enable_cc_channels(&TCC0,TC_CCCEN);
-		////LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-		//}
-		//}
-		//if (charge_flg)//full_charge ||
-		//{
-			////LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-			//if (Robot_D[RobotID].KCK )
-			//{
-				//if( KCK_Sens || (Robot_D[RobotID].KCK%2))
-				//{
-					//flg_dir = 1;
-				//}
-			//}
-			//if (Robot_D[RobotID].CHP)
-			//{
-				////LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-				//if(KCK_Sens || (Robot_D[RobotID].CHP%2))
-				//{
-					//flg_chip = 1;
-				//}
-			//}
-		//}
-		//if (KCK_DSH_SW )
-		//{
-			//flg_sw = 1;
-		//}
-		
-		if(wireless_reset>=30)
-		{
-			NRF_init();
-			wireless_reset=0;
-		}
-	
+	time2sec++;	
 	charge_time++;
 	if(charge_time>=3100)
 	charge_flg=1;
@@ -524,9 +463,24 @@ ISR(TCD0_OVF_vect)
 	wdt_reset();
 	CLK_par_PORT.OUTTGL = CLK_par_bm;	
 };
-
+int led_counter = 0;
 ISR(TCD0_CCA_vect)
 {   
+	led_counter ++;
+	if(led_counter ==8000)
+	{
+		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		led_counter = 0;
+		wireless_reset++;
+	}
+	
+				if(wireless_reset>=10)
+				{
+					NRF_init();
+					wireless_reset=0;
+					LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+				}
+	
 	if ( free_wheel>100 || current_ov)// || battery_low )
 	{
 		Robot_D[RobotID].M0a = 1;
