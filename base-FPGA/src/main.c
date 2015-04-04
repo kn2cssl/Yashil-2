@@ -36,6 +36,7 @@
 
 void NRF_init (void) ;
 void data_transmission (void);
+void every1ms(void);
 
 unsigned char Buf_Rx_L[_Buffer_Size] ;
 char Buf_Tx_L[_Buffer_Size];
@@ -89,6 +90,7 @@ int parity_calc(signed int data);
 
 int main (void)
 {
+
 	En_RC32M();
 
 	//Enable LowLevel & HighLevel Interrupts
@@ -104,13 +106,21 @@ int main (void)
 	USARTE0_init();
 	ADCA_init();
 	ADCB_init();
-	wdt_enable();
-	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_16CLK);
 	
 	// Globally enable interrupts
-	sei();
 
-	//Address[0]=Address[0] + RobotID ;
+	
+		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+		LED_White_PORT.OUTTGL = LED_White_PIN_bm;
+	_delay_ms(4000);
+			LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;
+			LED_White_PORT.OUTCLR = LED_White_PIN_bm;
+	wdt_enable();
+	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_16CLK);
+	sei();
+	_delay_ms(1000);
+
+
 
 	//// NRF Initialize
 	NRF_init () ;
@@ -123,8 +133,6 @@ int main (void)
 	
 	while(1)
 	  {  
-		    asm("wdr");
-			 wdt_reset();
 		///////////////////////////////////////////////////////////////// motor current sensor
 		
 		if(t_10ms)
@@ -221,7 +229,7 @@ int main (void)
 				}
 				if (Robot_D[RobotID].CHP)
 				{
-					LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+					//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 					if(KCK_Sens || (Robot_D[RobotID].CHP%2))
 					{
 					flg_chip = 1;	
@@ -242,10 +250,10 @@ int main (void)
 			//}
 
 			
-			if(KCK_Sens)
-			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
-			else
-			 LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
+// 			if(KCK_Sens)
+// 			 //LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
+// 			else
+// 			 //LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
 	  }
 	   
 }
@@ -257,7 +265,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	  {
 		  LED_White_PORT.OUTTGL = LED_White_PIN_bm;
 		  wireless_reset=0;
-		   wdt_reset();
+		  // wdt_reset();
 		  //1) read payload through SPI,
 		  NRF24L01_L_Read_RX_Buf(Buf_Rx_L, _Buffer_Size);
 		  free_wheel=0 ;
@@ -317,136 +325,7 @@ char timectrl;//,time2sec;
 long int t_alarm;
 ISR(TCE1_OVF_vect)//1ms
 {
-	wdt_reset();
-	charge_count++;
-		shoot_alarm_time++;
-		
-		if (shoot_alarm_time>=200)
-		{
-			shoot_alarm_flg = ~(shoot_alarm_flg);
-			shoot_alarm_time=0;
-		}
-	
-	t_allow++;
-	if(t_allow>1000)   cur_allow=1;
-	
-	t++;
-	if (t>=10)
-	{
-		t_10ms=1;
-		t=0;
-	}
-	t_alarm++;
-	if (t_alarm>=500)
-	{
-		flg_alarm = ~(flg_alarm);
-		t_alarm=0;
-	}
-	
-	t_1ms++;
 
-	
-	timectrl++;
-	
-
-	free_wheel++;
-
-	
-	time2sec++;	
-	charge_time++;
-	if(charge_time>=3100)
-	charge_flg=1;
-			
-	if ((flg_dir & flg_chip)==1)
-	{
-	flg_dir = 1;
-	flg_chip = 0;
-	}
-	
-	if(flg_sw)
-	{
-		if(kck_time_sw<3000)
-		{
-			kck_time_sw++;
-			tc_disable_cc_channels(&TCC0,TC_CCCEN);
-			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
-			tc_disable_cc_channels(&TCC0,TC_CCDEN);
-			else
-			{
-			tc_enable_cc_channels(&TCC0,TC_CCDEN);
-			KCK_Speed_DIR(KCK_SPEED_LOW);
-			full_charge=0;
-			charge_flg=0;
-			charge_time=0;
-			}
-		}
-	    else 
-		{
-			//if(battery_low==0)
-			//{
-			KCK_Speed_DIR(KCK_SPEED_OFF);
-			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-		    kck_time_sw=0; kck_time_dir=0; flg_sw=0;
-		}
-	}
-	if(flg_dir)
-	{    
-		if(kck_time_dir<100)
-		{
-			kck_time_dir++;
-			tc_disable_cc_channels(&TCC0,TC_CCCEN);
-			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
-				tc_disable_cc_channels(&TCC0,TC_CCDEN);
-			else
-			{
-				if(charge_flg)//full_charge ||
-				{
-					tc_enable_cc_channels(&TCC0,TC_CCDEN);
-					KCK_Speed_DIR(Robot_D[RobotID].KCK);
-					full_charge=0;
-					charge_flg=0;
-					charge_time=0;
-				}
-			}
-		}
-		
-		else {
-			//if(battery_low==0)
-			//{
-			KCK_Speed_DIR(KCK_SPEED_OFF);
-			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			kck_time_dir=0; flg_dir=0;
-		}
-	}
-	
-	if(flg_chip)
-	{
-		if(kck_time_chip<100)
-		{
-			kck_time_chip++;
-			tc_disable_cc_channels(&TCC0,TC_CCCEN);
-			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
-			tc_disable_cc_channels(&TCC1,TC_CCAEN);
-			else
-			{
-				
-			    if(full_charge==1)
-				{
-					tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					KCK_Speed_CHIP(Robot_D[RobotID].CHP);
-					full_charge=0;
-				}
-			}
-		}
-		else {
-			//if(battery_low==0)
-			//{
-			KCK_Speed_CHIP(KCK_SPEED_OFF);
-			tc_enable_cc_channels(&TCC0,TC_CCCEN);
-			kck_time_chip=0; flg_chip=0;
-		}
-	}
 }
 //ISR(TCE0_OVF_vect)//10s
 //{
@@ -460,26 +339,33 @@ ISR(TCE1_OVF_vect)//1ms
 
 ISR(TCD0_OVF_vect)
 {
-	wdt_reset();
 	CLK_par_PORT.OUTTGL = CLK_par_bm;	
 };
-int led_counter = 0;
+uint32_t led_counter = 0;
+uint8_t counter_1ms = 0;
 ISR(TCD0_CCA_vect)
 {   
+	counter_1ms ++;
+	if (counter_1ms = 16)///timer 1 ms
+	{
+		wireless_reset++;
+		every1ms();
+	}
+	
+	if(wireless_reset>=100)
+	{
+		NRF_init();
+		wireless_reset=0;
+	}
+	
 	led_counter ++;
-	if(led_counter ==8000)
+	if(led_counter == 16666)
 	{
 		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 		led_counter = 0;
-		wireless_reset++;
 	}
 	
-				if(wireless_reset>=10)
-				{
-					NRF_init();
-					wireless_reset=0;
-					LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-				}
+
 	
 	if ( free_wheel>100 || current_ov)// || battery_low )
 	{
@@ -829,4 +715,138 @@ void data_transmission (void)
 	//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 	NRF24L01_L_Write_TX_Buf(Buf_Tx_L, _Buffer_Size);
 	//NRF24L01_L_RF_TX();
+}
+
+void every1ms(void)
+{
+	wdt_reset();
+	charge_count++;
+	shoot_alarm_time++;
+		
+	if (shoot_alarm_time>=200)
+	{
+		shoot_alarm_flg = ~(shoot_alarm_flg);
+		shoot_alarm_time=0;
+	}
+		
+	t_allow++;
+	if(t_allow>1000)   cur_allow=1;
+		
+	t++;
+	if (t>=10)
+	{
+		t_10ms=1;
+		t=0;
+	}
+	t_alarm++;
+	if (t_alarm>=500)
+	{
+		flg_alarm = ~(flg_alarm);
+		t_alarm=0;
+	}
+		
+	t_1ms++;
+
+		
+	timectrl++;
+		
+
+	free_wheel++;
+
+		
+	time2sec++;
+	charge_time++;
+	if(charge_time>=3100)
+	charge_flg=1;
+		
+	if ((flg_dir & flg_chip)==1)
+	{
+		flg_dir = 1;
+		flg_chip = 0;
+	}
+		
+	if(flg_sw)
+	{
+		if(kck_time_sw<3000)
+		{
+			kck_time_sw++;
+			tc_disable_cc_channels(&TCC0,TC_CCCEN);
+			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
+			tc_disable_cc_channels(&TCC0,TC_CCDEN);
+			else
+			{
+				tc_enable_cc_channels(&TCC0,TC_CCDEN);
+				KCK_Speed_DIR(KCK_SPEED_LOW);
+				full_charge=0;
+				charge_flg=0;
+				charge_time=0;
+			}
+		}
+		else
+		{
+			//if(battery_low==0)
+			//{
+			KCK_Speed_DIR(KCK_SPEED_OFF);
+			tc_enable_cc_channels(&TCC0,TC_CCCEN);
+			kck_time_sw=0; kck_time_dir=0; flg_sw=0;
+		}
+	}
+	if(flg_dir)
+	{
+		if(kck_time_dir<100)
+		{
+			kck_time_dir++;
+			tc_disable_cc_channels(&TCC0,TC_CCCEN);
+			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
+			tc_disable_cc_channels(&TCC0,TC_CCDEN);
+			else
+			{
+				if(charge_flg)//full_charge ||
+				{
+					tc_enable_cc_channels(&TCC0,TC_CCDEN);
+					KCK_Speed_DIR(Robot_D[RobotID].KCK);
+					full_charge=0;
+					charge_flg=0;
+					charge_time=0;
+				}
+			}
+		}
+			
+		else {
+			//if(battery_low==0)
+			//{
+			KCK_Speed_DIR(KCK_SPEED_OFF);
+			tc_enable_cc_channels(&TCC0,TC_CCCEN);
+			kck_time_dir=0; flg_dir=0;
+		}
+	}
+		
+	if(flg_chip)
+	{
+		if(kck_time_chip<100)
+		{
+			kck_time_chip++;
+			tc_disable_cc_channels(&TCC0,TC_CCCEN);
+			//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+			if(((KCK_DCh_Limit_PORT.IN & KCK_DCh_Limit_PIN_bm)>>KCK_DCh_Limit_PIN_bp))
+			tc_disable_cc_channels(&TCC1,TC_CCAEN);
+			else
+			{
+					
+				if(full_charge==1)
+				{
+					tc_enable_cc_channels(&TCC1,TC_CCAEN);
+					KCK_Speed_CHIP(Robot_D[RobotID].CHP);
+					full_charge=0;
+				}
+			}
+		}
+		else {
+			//if(battery_low==0)
+			//{
+			KCK_Speed_CHIP(KCK_SPEED_OFF);
+			tc_enable_cc_channels(&TCC0,TC_CCCEN);
+			kck_time_chip=0; flg_chip=0;
+		}
+	}
 }
