@@ -49,6 +49,7 @@ int adc_change = 0;
 int wireless_reset=0;
 float adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0,flg_sw=0;
+bool reset_setpoint_flag = true;
 
 
 ////////////////////////////////////////current defines
@@ -110,15 +111,18 @@ int main (void)
 	// Globally enable interrupts
 
 	
-		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-		LED_White_PORT.OUTTGL = LED_White_PIN_bm;
-	_delay_ms(4000);
-			LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;
-			LED_White_PORT.OUTCLR = LED_White_PIN_bm;
-	wdt_enable();
-	wdt_set_timeout_period(WDT_TIMEOUT_PERIOD_16CLK);
+	LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+	LED_White_PORT.OUTTGL = LED_White_PIN_bm;
+	_delay_ms(1);
+	LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;
+	LED_White_PORT.OUTCLR = LED_White_PIN_bm;
+
+	uint8_t temp;
+	temp = WDT_PER_256CLK_gc | (1 << WDT_ENABLE_bp) | (1 << WDT_CEN_bp);
+	ccp_write_io((void *)&WDT.CTRL, temp);
+	wdt_wait_while_busy();
+	
 	sei();
-	_delay_ms(1000);
 
 
 
@@ -155,7 +159,7 @@ int main (void)
 		}
 		current_ov = Driver.cur_alarm[0] || Driver.cur_alarm[1] || Driver.cur_alarm[2] || Driver.cur_alarm[3];
 			
-			Test_Data[0]=(int)adc;
+			Test_Data[0]=(int)Driver.cur[0];
 			Test_Data[1]=(int)Driver.cur[1];
 			Test_Data[2]=(int)Driver.cur[2]; 
 			Test_Data[3]=(int)Driver.cur[3];			
@@ -265,7 +269,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	  {
 		  LED_White_PORT.OUTTGL = LED_White_PIN_bm;
 		  wireless_reset=0;
-		  // wdt_reset();
+		  wdt_reset();
 		  //1) read payload through SPI,
 		  NRF24L01_L_Read_RX_Buf(Buf_Rx_L, _Buffer_Size);
 		  free_wheel=0 ;
@@ -346,10 +350,12 @@ uint8_t counter_1ms = 0;
 ISR(TCD0_CCA_vect)
 {   
 	counter_1ms ++;
-	if (counter_1ms = 16)///timer 1 ms
+	if (counter_1ms >= 16)///timer 1 ms
 	{
 		wireless_reset++;
 		every1ms();
+		counter_1ms=0;
+		reset_setpoint_flag = false;
 	}
 	
 	if(wireless_reset>=100)
@@ -363,8 +369,7 @@ ISR(TCD0_CCA_vect)
 	{
 		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
 		led_counter = 0;
-	}
-	
+	}	
 
 	
 	if ( free_wheel>100 || current_ov)// || battery_low )
@@ -381,6 +386,17 @@ ISR(TCD0_CCA_vect)
 		Robot_D[RobotID].M1b == 4)
 		{
 			free_wheel_flag = 1;
+			if (reset_setpoint_flag)
+			{
+				Robot_D[RobotID].M0a  = 0;
+				Robot_D[RobotID].M0b  = 0;
+				Robot_D[RobotID].M1a  = 0;
+				Robot_D[RobotID].M1b  = 0;
+				Robot_D[RobotID].M2a  = 0;
+				Robot_D[RobotID].M2b  = 0;
+				Robot_D[RobotID].M3a  = 0;
+				Robot_D[RobotID].M3b  = 0;
+			}
 		}
 		
 	else
@@ -653,13 +669,13 @@ void chek_DriverCurrent(int x)
 	if (Driver.cur[x]>=2000)
 	{
 		Driver.count_H[x] ++;
-		if (Driver.count_H[x] >300)// && count<200)
+		if (Driver.count_H[x] >100)// && count<200)
 		{
 			Driver.cur_alarm[x] = 1;
 			Driver.count_H[x] = 0;
 		}
 	}
-	else if(Driver.cur[x]>=1000)
+	else if(Driver.cur[x]>=800)
 	{
 		Driver.count_L[x] ++;
 		if (Driver.count_L[x] >1000)// && count<200)
@@ -676,21 +692,9 @@ void data_transmission (void)
 {
 	//transmitting data to wireless board/////////////////////////////////////////////////
 
-			Test_Data[7] = adc*0.4761;//battery voltage
-			Test_Data[0] = adc*0.4761;//battery voltage
+			Test_Data[4] = adc*0.4761;//battery voltage
 			
 	
-// 	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;	//drive test data
-// 	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;			//drive test data
-// 	Buf_Tx_L[2]  = Robot_D[RobotID].M1a;//(Test_Data[1]>> 8) & 0xFF;	//drive test data
-// 	Buf_Tx_L[3]  = Robot_D[RobotID].M1b;//Test_Data[1] & 0xFF;			//drive test data
-// 	Buf_Tx_L[4]  = Robot_D[RobotID].M2a;//(Test_Data[2]>> 8) & 0xFF;	//drive test data
-// 	Buf_Tx_L[5]  = Robot_D[RobotID].M2b;//Test_Data[2] & 0xFF;			//drive test data
-// 	Buf_Tx_L[6]  = Robot_D[RobotID].M3a;//(Test_Data[3]>> 8) & 0xFF;	//drive test data
-// 	Buf_Tx_L[7]  = Robot_D[RobotID].M3b;//Test_Data[3] & 0xFF;			//drive test data
-// 	 		//Test_Data[0] = adc/12;
-// 	 		//Test_Data[1] = time_test;
-	//
 	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//Robot_D[RobotID].M0a;//	//drive test data
 	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;//Robot_D[RobotID].M0b;//			//drive test data
 	Buf_Tx_L[2]  = (Test_Data[1]>> 8) & 0xFF;//Robot_D[RobotID].M1a;//	//drive test data
@@ -699,14 +703,12 @@ void data_transmission (void)
 	Buf_Tx_L[5]  = Test_Data[2] & 0xFF;//Robot_D[RobotID].M2b;//			//drive test data
 	Buf_Tx_L[6]  = (Test_Data[3]>> 8) & 0xFF;//Robot_D[RobotID].M3a;//	//drive test data
 	Buf_Tx_L[7]  = Test_Data[3] & 0xFF;//Robot_D[RobotID].M3b;//			//drive test data
-
-
-	//Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
-	//Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
-	//Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
-	//Buf_Tx_L[11] = Test_Data[5] & 0xFF;			// unused
-	//Buf_Tx_L[12] = (Test_Data[6]>> 8) & 0xFF;	// unused
-	//Buf_Tx_L[13] = Test_Data[6] & 0xFF;			// unused
+	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
+	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
+	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
+	Buf_Tx_L[11] = Test_Data[5] & 0xFF;			// unused
+	Buf_Tx_L[12] = (Test_Data[6]>> 8) & 0xFF;	// unused
+	Buf_Tx_L[13] = Test_Data[6] & 0xFF;			// unused
 	Buf_Tx_L[14] = (Test_Data[7]>> 8) & 0xFF;	// battery voltage
 	Buf_Tx_L[15] = Test_Data[7] & 0xFF;			// battery voltage
 	Buf_Tx_L[16] = adc/12;						//battery adc
@@ -719,7 +721,6 @@ void data_transmission (void)
 
 void every1ms(void)
 {
-	wdt_reset();
 	charge_count++;
 	shoot_alarm_time++;
 		
