@@ -5,32 +5,11 @@
  *
  */
 
-/**
- * \mainpage User Application template doxygen documentation
- *
- * \par Empty user application template
- *
- * Bare minimum empty user application template
- *
- * \par Content
- *
- * -# Include the ASF header files (through asf.h)
- * -# "Insert system clock initialization code here" comment
- * -# Minimal main function that starts with a call to board_init()
- * -# "Insert application code here" comment
- *
- */
-
-/*
- * Include header files for all drivers that have been imported from
- * Atmel Software Framework (ASF).
- */
 #include <asf.h>
 #define F_CPU 32000000UL
 #include <util/delay.h>
 #include "initialize.h"
 #include "nrf24l01_L.h"
-#include "transmitter.h" //warning mide az sendnewdata va senddata
 #include <stdlib.h>
 
 
@@ -50,6 +29,33 @@ int wireless_reset=0;
 float adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0,flg_sw=0;
 bool reset_setpoint_flag = true;
+
+struct Robot_Data
+{
+	uint8_t RID;
+	signed int M0a;
+	signed int M0b;
+	signed int M1a;
+	signed int M1b;
+	signed int M2a;
+	signed int M2b;
+	signed int M3a;
+	signed int M3b;
+	uint8_t KCK;
+	uint8_t CHP;
+	uint8_t ASK;	
+}Robot_D;
+
+
+
+
+
+
+
+
+
+
+
 
 
 ////////////////////////////////////////current defines
@@ -91,6 +97,20 @@ int parity_calc(signed int data);
 
 int main (void)
 {
+	Robot_D.RID=0;
+	Robot_D.M0a=1;
+	Robot_D.M0b=2;
+	Robot_D.M1a=3;
+	Robot_D.M1b=4;
+	Robot_D.M2a=0;
+	Robot_D.M2b=0;
+	Robot_D.M3a=0;
+	Robot_D.M3b=0;
+	Robot_D.KCK=0;
+	Robot_D.CHP=0;
+	Robot_D.ASK=0;
+	
+
 
 	En_RC32M();
 
@@ -103,7 +123,7 @@ int main (void)
 	TimerC0_init();
 	TimerC1_init();
 	//TimerE0_init();
-	TimerE1_init();
+	//TimerE1_init();
 	USARTE0_init();
 	ADCA_init();
 	ADCB_init();
@@ -219,17 +239,17 @@ int main (void)
 			if (charge_flg)//full_charge ||
 			{
 				//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-				if (Robot_D[RobotID].KCK )
+				if (Robot_D.KCK )
 				{
-					if( KCK_Sens || (Robot_D[RobotID].KCK%2))
+					if( KCK_Sens || (Robot_D.KCK%2))
 					{
 					flg_dir = 1;	
 					}
 				}
-				if (Robot_D[RobotID].CHP)
+				if (Robot_D.CHP)
 				{
 					//LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-					if(KCK_Sens || (Robot_D[RobotID].CHP%2))
+					if(KCK_Sens || (Robot_D.CHP%2))
 					{
 					flg_chip = 1;	
 					}
@@ -271,22 +291,22 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		  if((Buf_Rx_L[0] == 0x0A && (RobotID < 3 || (RobotID<9 && RobotID>5)))|| (Buf_Rx_L[0] == 0xA0 && (RobotID > 8 || (RobotID<6 && RobotID>2))))
 		  {
 			  LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
-			  Robot_D[RobotID].RID  = Buf_Rx_L[0];
-			  Robot_D[RobotID].M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
-			  Robot_D[RobotID].M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
-			  Robot_D[RobotID].M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
-			  Robot_D[RobotID].M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
-			  Robot_D[RobotID].M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
-			  Robot_D[RobotID].M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
-			  Robot_D[RobotID].M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
-			  Robot_D[RobotID].M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
-			  Robot_D[RobotID].KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
-			  Robot_D[RobotID].CHP  = Buf_Rx_L[10+RobotID%3 * 10];
-			  Robot_D[RobotID].ASK  = Buf_Rx_L[31];//0b00000000
+			  Robot_D.RID  = Buf_Rx_L[0];
+			  Robot_D.M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
+			  Robot_D.M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
+			  Robot_D.M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
+			  Robot_D.M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
+			  Robot_D.M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
+			  Robot_D.M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
+			  Robot_D.M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
+			  Robot_D.M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
+			  Robot_D.KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
+			  Robot_D.CHP  = Buf_Rx_L[10+RobotID%3 * 10];
+			  Robot_D.ASK  = Buf_Rx_L[31];//0b00000000
 			  
-			  if (Robot_D[RobotID].ASK != Robot_Select)
+			  if (Robot_D.ASK != Robot_Select)
 			  {
-				  Robot_Select = Robot_D[RobotID].ASK;
+				  Robot_Select = Robot_D.ASK;
 				  if (Robot_Select == RobotID)
 				  {
 					  NRF24L01_L_WriteReg(W_REGISTER | EN_AA, 0x01);
@@ -297,7 +317,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 				  }
 			  }
 			  
-			  if (Robot_D[RobotID].ASK == RobotID)
+			  if (Robot_D.ASK == RobotID)
 			  {
 				  data_transmission();
 			  }
@@ -369,28 +389,28 @@ ISR(TCD0_CCA_vect)
 	
 	if ( free_wheel>100 || current_ov)// || battery_low )
 	{
-		Robot_D[RobotID].M0a = 1;
-		Robot_D[RobotID].M0b = 2;
-		Robot_D[RobotID].M1a = 3;
-		Robot_D[RobotID].M1b = 4;
+		Robot_D.M0a = 1;
+		Robot_D.M0b = 2;
+		Robot_D.M1a = 3;
+		Robot_D.M1b = 4;
 	}
 	
-	if (Robot_D[RobotID].M0a == 1  &&
-		Robot_D[RobotID].M0b == 2  &&
-		Robot_D[RobotID].M1a == 3  &&
-		Robot_D[RobotID].M1b == 4)
+	if (Robot_D.M0a == 1  &&
+		Robot_D.M0b == 2  &&
+		Robot_D.M1a == 3  &&
+		Robot_D.M1b == 4)
 		{
 			free_wheel_flag = 1;
 			if (reset_setpoint_flag)
 			{
-				Robot_D[RobotID].M0a  = 0;
-				Robot_D[RobotID].M0b  = 0;
-				Robot_D[RobotID].M1a  = 0;
-				Robot_D[RobotID].M1b  = 0;
-				Robot_D[RobotID].M2a  = 0;
-				Robot_D[RobotID].M2b  = 0;
-				Robot_D[RobotID].M3a  = 0;
-				Robot_D[RobotID].M3b  = 0;
+				Robot_D.M0a  = 0;
+				Robot_D.M0b  = 0;
+				Robot_D.M1a  = 0;
+				Robot_D.M1b  = 0;
+				Robot_D.M2a  = 0;
+				Robot_D.M2b  = 0;
+				Robot_D.M3a  = 0;
+				Robot_D.M3b  = 0;
 			}
 		}
 		
@@ -400,14 +420,14 @@ ISR(TCD0_CCA_vect)
 	if(SW_TEST)
 	{
 		//////Micro to FPGA communication test number 1 test number 2  (comment the data packet received from wireless)
-		Robot_D[RobotID].M0b  = 0xB8;//low
-		Robot_D[RobotID].M0a  = 0x0B;//high ---> speed=3000
-		Robot_D[RobotID].M1b  = 0XB8;
-		Robot_D[RobotID].M1a  = 0X0B;
-		Robot_D[RobotID].M2b  = 0XB8;
-		Robot_D[RobotID].M2a  = 0X0B;
-		Robot_D[RobotID].M3b  = 0xB8;
-		Robot_D[RobotID].M3a  = 0X0B;
+		Robot_D.M0b  = 0xB8;//low
+		Robot_D.M0a  = 0x0B;//high ---> speed=3000
+		Robot_D.M1b  = 0XB8;
+		Robot_D.M1a  = 0X0B;
+		Robot_D.M2b  = 0XB8;
+		Robot_D.M2a  = 0X0B;
+		Robot_D.M3b  = 0xB8;
+		Robot_D.M3a  = 0X0B;
 		//wdt_reset_mcu();
 	}
 	switch (motor_num)
@@ -420,7 +440,7 @@ ISR(TCD0_CCA_vect)
 			//PARITY_PORT.OUTCLR = PARITY_bm;
 			STARTBIT_PORT.OUTSET = STARTBIT_bm;
 			motor_num++;
-			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
+			//PARITY_PORT.OUTSET =(parity_calc(Robot_D.M0a)<<PARITY_bp);
 		}
 		break;
 		case 1:
@@ -437,7 +457,7 @@ ISR(TCD0_CCA_vect)
 			//PARITY_PORT.OUTSET = PARITY_bm;
 			//STARTBIT_PORT.OUTSET = STARTBIT_bm;
 			//motor_num++;
-			////PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
+			////PARITY_PORT.OUTSET = (parity_calc(Robot_D.M1a)<<PARITY_bp);
 		//}
 		//break;
 		//case 3:
@@ -449,11 +469,11 @@ ISR(TCD0_CCA_vect)
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0b;//low byte
+			FPGA_DATA_PORT.OUT = Robot_D.M0b;//low byte
 			PARITY_PORT.OUTCLR = PARITY_bm;
 			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
-			//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
+			//PARITY_PORT.OUTSET =(parity_calc(Robot_D.M0a)<<PARITY_bp);
 			}
 		break;
 		case 3:
@@ -466,11 +486,11 @@ ISR(TCD0_CCA_vect)
 			MOTORNUM_PORT.OUTCLR= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M0a;
+			FPGA_DATA_PORT.OUT = Robot_D.M0a;
 			PARITY_PORT.OUTSET = PARITY_bm;
 			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
-			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
+			//PARITY_PORT.OUTSET = (parity_calc(Robot_D.M1a)<<PARITY_bp);
 			}
 		break;
 		case 5:
@@ -483,11 +503,11 @@ ISR(TCD0_CCA_vect)
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1b;
+			FPGA_DATA_PORT.OUT = Robot_D.M1b;
 			PARITY_PORT.OUTCLR = PARITY_bm;
 			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
-			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
+			//PARITY_PORT.OUTSET = (parity_calc(Robot_D.M2a)<<PARITY_bp);
 			}
 			break;
 		case 7:
@@ -500,11 +520,11 @@ ISR(TCD0_CCA_vect)
 			MOTORNUM_PORT.OUT= MOTORNUM0_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-			FPGA_DATA_PORT.OUT = Robot_D[RobotID].M1a;
+			FPGA_DATA_PORT.OUT = Robot_D.M1a;
 			PARITY_PORT.OUTSET = PARITY_bm;
 			STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 			motor_num++;
-			//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
+			//PARITY_PORT.OUTSET = (parity_calc(Robot_D.M3a)<<PARITY_bp);
 			}
 			break;
 		case 9:
@@ -517,11 +537,11 @@ ISR(TCD0_CCA_vect)
 			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2b;
+				FPGA_DATA_PORT.OUT = Robot_D.M2b;
 				PARITY_PORT.OUTCLR = PARITY_bm;
 				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
-				//PARITY_PORT.OUTSET =(parity_calc(Robot_D[RobotID].M0a)<<PARITY_bp);
+				//PARITY_PORT.OUTSET =(parity_calc(Robot_D.M0a)<<PARITY_bp);
 			}
 		    break;
 		case 11:
@@ -534,11 +554,11 @@ ISR(TCD0_CCA_vect)
 			MOTORNUM_PORT.OUT= MOTORNUM1_bm;
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M2a;
+				FPGA_DATA_PORT.OUT = Robot_D.M2a;
 				PARITY_PORT.OUTSET = PARITY_bm;
 				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
-				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M1a)<<PARITY_bp);
+				//PARITY_PORT.OUTSET = (parity_calc(Robot_D.M1a)<<PARITY_bp);
 			}
 			break;
 		case 13:
@@ -551,11 +571,11 @@ ISR(TCD0_CCA_vect)
 			MOTORNUM_PORT.OUT= (MOTORNUM0_bm | MOTORNUM1_bm);
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3b;
+				FPGA_DATA_PORT.OUT = Robot_D.M3b;
 				PARITY_PORT.OUTCLR = PARITY_bm;
 				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
-				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M2a)<<PARITY_bp);
+				//PARITY_PORT.OUTSET = (parity_calc(Robot_D.M2a)<<PARITY_bp);
 			}
 			break;
 		case 15:
@@ -569,11 +589,11 @@ ISR(TCD0_CCA_vect)
 			if(((CLK_par_PORT.IN && CLK_par_bm)))
 			{
 				//LED_White_PORT.OUTTGL = LED_White_PIN_bm;
-				FPGA_DATA_PORT.OUT = Robot_D[RobotID].M3a;
+				FPGA_DATA_PORT.OUT = Robot_D.M3a;
 				PARITY_PORT.OUTSET = PARITY_bm;
 				STARTBIT_PORT.OUTCLR = STARTBIT_bm;
 				motor_num++;
-				//PARITY_PORT.OUTSET = (parity_calc(Robot_D[RobotID].M3a)<<PARITY_bp);
+				//PARITY_PORT.OUTSET = (parity_calc(Robot_D.M3a)<<PARITY_bp);
 			}
 			break;
 		case 17:
@@ -690,14 +710,14 @@ void data_transmission (void)
 			Test_Data[4] = led_counter*.0006;//adc*0.4761;//battery voltage
 			
 	
-	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//Robot_D[RobotID].M0a;//	//drive test data
-	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;//Robot_D[RobotID].M0b;//			//drive test data
-	Buf_Tx_L[2]  = (Test_Data[1]>> 8) & 0xFF;//Robot_D[RobotID].M1a;//	//drive test data
-	Buf_Tx_L[3]  = Test_Data[1] & 0xFF;	//Robot_D[RobotID].M1b;//		//drive test data
-	Buf_Tx_L[4]  = (Test_Data[2]>> 8) & 0xFF;//Robot_D[RobotID].M2a;//	//drive test data
-	Buf_Tx_L[5]  = Test_Data[2] & 0xFF;//Robot_D[RobotID].M2b;//			//drive test data
-	Buf_Tx_L[6]  = (Test_Data[3]>> 8) & 0xFF;//Robot_D[RobotID].M3a;//	//drive test data
-	Buf_Tx_L[7]  = Test_Data[3] & 0xFF;//Robot_D[RobotID].M3b;//			//drive test data
+	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
+	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
+	Buf_Tx_L[2]  = (Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
+	Buf_Tx_L[3]  = Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
+	Buf_Tx_L[4]  = (Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
+	Buf_Tx_L[5]  = Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
+	Buf_Tx_L[6]  = (Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
+	Buf_Tx_L[7]  = Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
 	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
 	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
 	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
@@ -800,7 +820,7 @@ void every1ms(void)
 				if(charge_flg)//full_charge ||
 				{
 					tc_enable_cc_channels(&TCC0,TC_CCDEN);
-					KCK_Speed_DIR(Robot_D[RobotID].KCK);
+					KCK_Speed_DIR(Robot_D.KCK);
 					full_charge=0;
 					charge_flg=0;
 					charge_time=0;
@@ -832,7 +852,7 @@ void every1ms(void)
 				if(full_charge==1)
 				{
 					tc_enable_cc_channels(&TCC1,TC_CCAEN);
-					KCK_Speed_CHIP(Robot_D[RobotID].CHP);
+					KCK_Speed_CHIP(Robot_D.CHP);
 					full_charge=0;
 				}
 			}
