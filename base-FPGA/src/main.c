@@ -75,7 +75,7 @@ int driver_adc(int);
 uint32_t t_allow,t_1ms,shoot_alarm_time=0;
 int flg_2min=0,flg_2min10ms=0;
 int cur_allow=0;
-int current_ov=0;
+int current_ov=0,current_alarm;
 int flg_alarm=0,shoot_alarm_flg=0;
 int t,t_10ms=0;
 int bat_count=0,battery_alarm=0;
@@ -152,8 +152,9 @@ int main (void)
 		t_10ms=0;
 		}
 		current_ov = Driver.cur_alarm[0] || Driver.cur_alarm[1] || Driver.cur_alarm[2] || Driver.cur_alarm[3];
-			
-			Test_Data[0]=(int)Driver.cur[0];
+		current_alarm = 0*Driver.cur_alarm[0] + 1*Driver.cur_alarm[1] + 2*Driver.cur_alarm[2] + 3*Driver.cur_alarm[3] ;	
+		
+			Test_Data[0]=current_alarm;//(int)Driver.cur[0];
 			Test_Data[1]=(int)Driver.cur[1];
 			Test_Data[2]=(int)Driver.cur[2]; 
 			Test_Data[3]=(int)Driver.cur[3];			
@@ -663,7 +664,7 @@ void chek_DriverCurrent(int x)
 	if (Driver.cur[x]>=2000)
 	{
 		Driver.count_H[x] ++;
-		if (Driver.count_H[x] >200)// && count<200)
+		if (Driver.count_H[x] >250)// && count<200)
 		{
 			Driver.cur_alarm[x] = 1;
 			Driver.count_H[x] = 0;
