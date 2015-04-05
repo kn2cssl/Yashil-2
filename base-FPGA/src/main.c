@@ -110,15 +110,9 @@ int main (void)
 	
 	// Globally enable interrupts
 
-	
-	LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-	LED_White_PORT.OUTTGL = LED_White_PIN_bm;
-	_delay_ms(1);
-	LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;
-	LED_White_PORT.OUTCLR = LED_White_PIN_bm;
 
 	uint8_t temp;
-	temp = WDT_PER_256CLK_gc | (1 << WDT_ENABLE_bp) | (1 << WDT_CEN_bp);
+	temp = WDT_PER_2KCLK_gc | (1 << WDT_ENABLE_bp) | (1 << WDT_CEN_bp);
 	ccp_write_io((void *)&WDT.CTRL, temp);
 	wdt_wait_while_busy();
 	
@@ -345,7 +339,7 @@ ISR(TCD0_OVF_vect)
 {
 	CLK_par_PORT.OUTTGL = CLK_par_bm;	
 };
-uint32_t led_counter = 0;
+uint64_t led_counter = 0;
 uint8_t counter_1ms = 0;
 ISR(TCD0_CCA_vect)
 {   
@@ -365,11 +359,11 @@ ISR(TCD0_CCA_vect)
 	}
 	
 	led_counter ++;
-	if(led_counter == 16666)
-	{
-		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-		led_counter = 0;
-	}	
+// 	if(led_counter == 16666)
+// 	{
+// 		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
+// 		led_counter = 0;
+// 	}	
 
 	
 	if ( free_wheel>100 || current_ov)// || battery_low )
@@ -669,22 +663,22 @@ void chek_DriverCurrent(int x)
 	if (Driver.cur[x]>=2000)
 	{
 		Driver.count_H[x] ++;
-		if (Driver.count_H[x] >100)// && count<200)
+		if (Driver.count_H[x] >200)// && count<200)
 		{
 			Driver.cur_alarm[x] = 1;
 			Driver.count_H[x] = 0;
 		}
 	}
-	else if(Driver.cur[x]>=800)
-	{
-		Driver.count_L[x] ++;
-		if (Driver.count_L[x] >1000)// && count<200)
-		{
-			Driver.cur_alarm[x] = 1;
-			Driver.count_L[x] = 0;
-		}
-	}
-	else	{Driver.count_H[x] = 0;Driver.count_L[x] = 0;}
+	//else if(Driver.cur[x]>=800)
+	//{
+		//Driver.count_L[x] ++;
+		//if (Driver.count_L[x] >2500)// && count<200)
+		//{
+			//Driver.cur_alarm[x] = 1;
+			//Driver.count_L[x] = 0;
+		//}
+	//}
+	else	{Driver.count_H[x] = 0;/*Driver.count_L[x] = 0;*/}
 		
 }
 
@@ -692,7 +686,7 @@ void data_transmission (void)
 {
 	//transmitting data to wireless board/////////////////////////////////////////////////
 
-			Test_Data[4] = adc*0.4761;//battery voltage
+			Test_Data[4] = led_counter*.0006;//adc*0.4761;//battery voltage
 			
 	
 	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//Robot_D[RobotID].M0a;//	//drive test data
