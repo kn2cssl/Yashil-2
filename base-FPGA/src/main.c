@@ -153,6 +153,17 @@ int main (void)
 	  {  
 		///////////////////////////////////////////////////////////////// motor current sensor
 		
+		LED_Red_PORT.OUTCLR = LED_Red_PIN_bm;
+		LED_White_PORT.OUTCLR = LED_White_PIN_bm;
+		if(wireless_reset>=10)
+		{
+			wdt_reset();
+			NRF_init();
+			LED_Red_PORT.OUTSET = LED_Red_PIN_bm;
+			wireless_reset=0;
+		}
+		
+		
 		if(t_10ms)
 		{
 			
@@ -282,7 +293,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	  uint8_t status_L = NRF24L01_L_WriteReg(W_REGISTER | STATUSe, _TX_DS|_MAX_RT|_RX_DR);
 	  if((status_L & _RX_DR) == _RX_DR)
 	  {
-		  LED_White_PORT.OUTTGL = LED_White_PIN_bm;
+		  LED_White_PORT.OUTSET = LED_White_PIN_bm;
 		  wireless_reset=0;
 		  wdt_reset();
 		  //1) read payload through SPI,
@@ -290,7 +301,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 		  free_wheel=0 ;
 		  if((Buf_Rx_L[0] == 0x0A && (RobotID < 3 || (RobotID<9 && RobotID>5)))|| (Buf_Rx_L[0] == 0xA0 && (RobotID > 8 || (RobotID<6 && RobotID>2))))
 		  {
-			  LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
+			  LED_Red_PORT.OUTSET = LED_Red_PIN_bm;
 			  Robot_D.RID  = Buf_Rx_L[0];
 			  Robot_D.M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
 			  Robot_D.M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
@@ -342,10 +353,10 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 
 char timectrl;//,time2sec;
 long int t_alarm;
-ISR(TCE1_OVF_vect)//1ms
-{
-
-}
+// ISR(TCE1_OVF_vect)//1ms
+// {
+// 
+// }
 //ISR(TCE0_OVF_vect)//10s
 //{
 	//t_10s++;
@@ -364,6 +375,7 @@ uint64_t led_counter = 0;
 uint8_t counter_1ms = 0;
 ISR(TCD0_CCA_vect)
 {   
+	
 	counter_1ms ++;
 	if (counter_1ms >= 16)///timer 1 ms
 	{
@@ -373,18 +385,7 @@ ISR(TCD0_CCA_vect)
 		reset_setpoint_flag = false;
 	}
 	
-	if(wireless_reset>=100)
-	{
-		NRF_init();
-		wireless_reset=0;
-	}
-	
 	led_counter ++;
-// 	if(led_counter == 16666)
-// 	{
-// 		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-// 		led_counter = 0;
-// 	}	
 
 	
 	if ( free_wheel>100 || current_ov)// || battery_low )
@@ -628,14 +629,9 @@ void NRF_init (void)
 	NRF24L01_L_Flush_TX();
 	NRF24L01_L_Flush_RX();
 	NRF24L01_L_CE_LOW;
-	// 	    if (RobotID < 3)
-	// 	    NRF24L01_L_Init_milad(_TX_MODE, _CH_0, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
-	// 	    else if(RobotID > 2 && RobotID < 6)
-	// 	    NRF24L01_L_Init_milad(_TX_MODE, _CH_1, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
-	// 	    else if (RobotID > 5 && RobotID < 9)
-	// 	    NRF24L01_L_Init_milad(_TX_MODE, _CH_2, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
-	// 	    else
-	// 	    NRF24L01_L_Init_milad(_TX_MODE, _CH_3, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
+	
+	
+	
 	if (RobotID < 6)
 	NRF24L01_L_Init_milad(_RX_MODE, _CH_1, _2Mbps, Address, _Address_Width, _Buffer_Size, RF_PWR_MAX);
 	else if(RobotID > 5)
