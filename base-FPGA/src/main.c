@@ -269,10 +269,10 @@ int main (void)
 			//}
 
 			
-// 			if(KCK_Sens)
-// 			 //LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
-// 			else
-// 			 //LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
+			if(KCK_Sens)
+			 LED_Green_PORT.OUTSET = LED_Green_PIN_bm;
+			else
+			 LED_Green_PORT.OUTCLR = LED_Green_PIN_bm;	
 	  }
 	   
 }
