@@ -740,7 +740,7 @@ static inline void tc_disable_cc_channels(volatile void *tc,
 		((TC0_t *)tc)->CTRLB &= ~disablemask;
 	} else if (tc_is_tc1(void *tc)) {
 		((TC1_t *)tc)->CTRLB &=
-				~(disablemask & (TC0_CCAEN_bm | TC0_CCBEN_bm));
+				~(disablemask & (TC0_CCAEN_bm | TC0_CCBEN_bm));//~(disablemask & TC0_CCAEN_bm & TC0_CCBEN_bm);
 	}
 }
 

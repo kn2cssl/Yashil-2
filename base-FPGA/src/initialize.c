@@ -9,7 +9,7 @@
 #include "initialize.h"
 
 
-void En_RC32M(void)
+void En_RC32M(void) 
 {
     // Start RC32M OSC
     OSC_CTRL |= OSC_RC32MEN_bm;
@@ -37,7 +37,7 @@ void PORT_init(void)
 	PORTD_INTCTRL = PORT_INT0LVL_LO_gc;
 	PORTD_INT0MASK = PIN2_bm;
 	
-	PORTE_DIRSET = SCK_CUR1_bm | MOSI_CUR1_bm | Buzzer_PIN_bm | TX_Data_PIN_bm | LED_Green_PIN_bm | LED_White_PIN_bm | LED_Red_PIN_bm;
+	PORTE_DIRSET = STARTBIT_bm | MOSI_CUR1_bm | Buzzer_PIN_bm | TX_Data_PIN_bm | LED_Green_PIN_bm | LED_White_PIN_bm | LED_Red_PIN_bm;
 	//PORTE.OUTSET = PIN3_bm;//TX pin on PORTE
 	
 	PORTF_DIRSET = FPGA_DATA0_bm | FPGA_DATA1_bm | FPGA_DATA2_bm | FPGA_DATA3_bm | FPGA_DATA4_bm | FPGA_DATA5_bm | FPGA_DATA6_bm | FPGA_DATA7_bm; 
@@ -46,32 +46,45 @@ void PORT_init(void)
 	//PORTR_OUTSET = MOTORNUM0_bm | MOTORNUM1_bm;
 };
 
-#define TIMERD0_PER 0xE0
+//#define TIMERD0_PER 0xE0
+//void TimerD0_init(void)
+//{
+	//tc_write_clock_source(&TCD0,TC_CLKSEL_DIV4_gc);
+	//tc_set_wgm(&TCD0,TC_WG_NORMAL);
+	//tc_set_overflow_interrupt_level(&TCD0,TC_INT_LVL_LO);
+	//tc_set_cca_interrupt_level(&TCD0,TC_INT_LVL_LO);
+	//tc_write_period(&TCD0,TIMERD0_PER);
+	//tc_write_cc(&TCD0, TC_CCA, 0x05);//05
+	//tc_set_direction(&TCD0,TC_UP);
+	////tc_enable_cc_channels(&TCD0,TC_CCAEN);
+	//tc_enable(&TCD0);
+//};
+#define TIMERD0_PER 0xEF//2C
 void TimerD0_init(void)
 {
-	tc_write_clock_source(&TCD0,TC_CLKSEL_DIV4_gc);
+	tc_write_clock_source(&TCD0,TC_CLKSEL_DIV8_gc);
 	tc_set_wgm(&TCD0,TC_WG_NORMAL);
-	tc_set_overflow_interrupt_level(&TCD0,TC_INT_LVL_LO);
-	tc_set_cca_interrupt_level(&TCD0,TC_INT_LVL_LO);
+	tc_set_overflow_interrupt_level(&TCD0,TC_INT_LVL_MED);
+	tc_set_cca_interrupt_level(&TCD0,TC_INT_LVL_MED);
 	tc_write_period(&TCD0,TIMERD0_PER);
-	tc_write_cc(&TCC0, TC_CCA, 0x05);//05
+	tc_write_cc(&TCD0, TC_CCA, 0x05);//05
 	tc_set_direction(&TCD0,TC_UP);
 	//tc_enable_cc_channels(&TCD0,TC_CCAEN);
 	tc_enable(&TCD0);
 };
 
-void TimerC0_init(void)// KICK_CHIP -> OC1A //KICK_DIR -> OC0D(PORTC3) //SHG_PULSE -> OC0C(PORTC2)
+void TimerC0_init(void) //KICK_DIR -> OC0D(PORTC3) //SHG_PULSE -> OC0C(PORTC2)
 {
     tc_write_clock_source(&TCC0,TC_CLKSEL_DIV64_gc);//1
     tc_set_wgm(&TCC0,TC_WG_SS);
     tc_write_period(&TCC0,0x77);//0x01DFF
     tc_set_direction(&TCC0,TC_UP);
-    tc_enable_cc_channels(&TCC0,TC_CCCEN);
+    //tc_enable_cc_channels(&TCC0,TC_CCCEN);
     tc_enable_cc_channels(&TCC0,TC_CCDEN);
     tc_enable(&TCC0);
 	tc_write_cc(&TCC0,TC_CCC,0x5D);
 };
-void TimerC1_init(void)
+void TimerC1_init(void) // KICK_CHIP -> OC1A (PORTC4)
 {
 	tc_write_clock_source(&TCC1,TC_CLKSEL_DIV64_gc);//1
 	tc_set_wgm(&TCC1,TC_WG_SS);
@@ -91,16 +104,16 @@ void TimerE1_init(void)
     tc_set_direction(&TCE1,TC_UP);
     tc_enable(&TCE1);
 };
-void TimerE0_init(void)
-{
-	tc_write_clock_source(&TCE0,TC_CLKSEL_DIV256_gc);
-	tc_set_wgm(&TCE0,TC_WG_SS);
-	tc_write_period(&TCE0,0x00FF);
-	tc_set_direction(&TCE0,TC_UP);
-	tc_enable_cc_channels(&TCE0,TC_CCCEN);
-	tc_enable_cc_channels(&TCE0,TC_CCDEN);
-	tc_enable(&TCE0);
-};
+//#define TIMERE0_PER 0x4C4A
+//void TimerE0_init(void)
+//{
+	//tc_write_clock_source(&TCE0,TC_CLKSEL_DIV1024_gc);
+	//tc_set_wgm(&TCE0,TC_WG_NORMAL);
+	//tc_set_overflow_interrupt_level(&TCE0,TC_INT_LVL_MED);
+	//tc_write_period(&TCE0,TIMERE0_PER);
+	//tc_set_direction(&TCE0,TC_UP);
+	//tc_enable(&TCE0);
+//};
 void SPI_Init(void)
 {
 	spi_xmega_set_baud_div(&NRF24L01_L_SPI,8000000UL,F_CPU);
@@ -120,6 +133,8 @@ void USARTE0_init(void)
 	usart_tx_enable(&USARTE0_conf);
 	//usart_rx_enable(&USARTE0_conf);
 }
+
+extern int change_ADC;
   //BATTERY FEEDBACK ----> PORTA3
 #define CONFIG_ADC_INTLVL ADC_CH_INTLVL_LO_gc
 void ADCA_init(void)
@@ -139,19 +154,102 @@ void ADCA_init(void)
     adc_get_calibration_data(ADC_CAL_ADCA);
     adc_set_conversion_parameters(&adca_conf,ADC_SIGN_OFF,ADC_RES_12,ADC_REF_AREFA);
     adc_set_clock_rate(&adca_conf,125000UL);
-    adc_set_conversion_trigger(&adca_conf,ADC_TRIG_FREERUN_SWEEP,1,0);//IN BARAYE CHIE??!
+    adc_set_conversion_trigger(&adca_conf,ADC_TRIG_FREERUN_SWEEP,2,0);
    // adc_set_config_compare_value(adcb_conf,KCK_MAX_CHARGE_AMP);
     adc_write_configuration(&ADCA,&adca_conf);
-    //
-    ///* Configure ADC channel 0:
-    //* - Input: ADCB4
-    //* - interrupts disable
-    //*/
-    adcch_read_configuration(&ADCA,1, &adca_ch_conf);
-    adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN3,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+	
+  
+    /////* Configure ADC channel 0:  battery voltage feedback
+    ////* - Input: ADCA3
+    ////* - interrupts disable
+    ////*/
+    //adcch_read_configuration(&ADCA,1, &adca_ch_conf);
+    //adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN3,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+    //adcch_write_configuration(&ADCA,1,&adca_ch_conf);
+	
+	
+	/* Configure ADC channel 0: motor4 current feedback(ADCA6) & battery voltage feedback(ADCA3)
+    * - Input: ADCA6
+    * - interrupts disable
+    */
+    adcch_read_configuration(&ADCA,1,&adca_ch_conf);
+    adcch_set_input(&adca_ch_conf,change_ADC,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+    //adcch_disable_interrupt(&adcb_ch_conf);
     adcch_write_configuration(&ADCA,1,&adca_ch_conf);
     
-    ///* Configure ADC channel 1: darim az channel 0 estefade mikonim ehtemalan!
+	/* Configure ADC channel 1:  motor3 current feedback
+    * - Input: ADCB5
+    * - Set Interrupt Mode: Below the threshold
+    * - interrupts disable
+    //*/
+    adcch_read_configuration(&ADCA,2, &adca_ch_conf);
+    adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN5,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+	//adcch_set_interrupt_mode(&adcb_ch_conf,ADCCH_MODE_ABOVE);
+	//adcch_enable_interrupt(&adcb_ch_conf);
+    adcch_write_configuration(&ADCA,2,&adca_ch_conf);  
+		
+    
+    ///* Configure ADC channel 3:
+    //* - Input: ADCB7
+    //* - interrupts disable
+    //*/
+    //adcch_read_configuration(&ADCB,3, &adcb_ch_conf);
+    //adcch_set_input(&adcb_ch_conf,ADCCH_POS_PIN7,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+    //adcch_set_interrupt_mode(&adcb_ch_conf,ADCCH_MODE_ABOVE);
+    //adcch_enable_interrupt(&adcb_ch_conf);
+    //adcch_write_configuration(&ADCB,3,&adcb_ch_conf);
+    //
+    adc_enable(&ADCA);
+    adc_start_conversion(&ADCA,ADC_CH0);
+    adc_start_conversion(&ADCA,ADC_CH1);
+    //adc_start_conversion(&ADCA,ADC_CH2);
+    //adc_start_conversion(&ADCA,ADC_CH3);
+}
+
+#define CONFIG_ADC_INTLVL ADC_CH_INTLVL_LO_gc
+void ADCB_init(void)
+{
+    struct adc_config adcb_conf;
+    struct adc_channel_config adcb_ch_conf;
+    //
+    //// Initialize configuration structures.
+    //adc_read_configuration(&ADCB, &adcb_conf);
+    //
+    ///* Configure the ADC module:
+    //* - unsigned, 12-bit results
+    //* - AREFA voltage reference
+    //* - 8000 kHz clock rate
+    //* - FreeRun Mode
+    //*/
+    adc_get_calibration_data(ADC_CAL_ADCB);
+    adc_set_conversion_parameters(&adcb_conf,ADC_SIGN_OFF,ADC_RES_12,ADC_REF_AREFA);
+    adc_set_clock_rate(&adcb_conf,125000UL);
+    adc_set_conversion_trigger(&adcb_conf,ADC_TRIG_FREERUN_SWEEP,2,0);
+   // adc_set_config_compare_value(adcb_conf,KCK_MAX_CHARGE_AMP);
+    adc_write_configuration(&ADCB,&adcb_conf);
+    
+    ///* Configure ADC channel 0:  motor1 current feedback
+    //* - Input: ADCB2
+    //* - interrupts disable
+    //*/
+    adcch_read_configuration(&ADCB,1, &adcb_ch_conf);
+    adcch_set_input(&adcb_ch_conf,ADCCH_POS_PIN2,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+    adcch_write_configuration(&ADCB,1,&adcb_ch_conf);
+    
+	/* Configure ADC channel 1:  motor2 current feedback
+    * - Input: ADCB1
+    * - Set Interrupt Mode: Below the threshold
+    * - interrupts disable
+    //*/
+    adcch_read_configuration(&ADCB,2, &adcb_ch_conf);
+    adcch_set_input(&adcb_ch_conf,ADCCH_POS_PIN1,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+	//adcch_set_interrupt_mode(&adcb_ch_conf,ADCCH_MODE_ABOVE);
+	//adcch_enable_interrupt(&adcb_ch_conf);
+    adcch_write_configuration(&ADCB,2,&adcb_ch_conf);
+	//
+	
+	
+	///* Configure ADC channel 1:  motor3 current feedback
     //* - Input: ADCB5
     //* - Set Interrupt Mode: Below the threshold
     //* - interrupts disable
@@ -162,7 +260,16 @@ void ADCA_init(void)
 	////adcch_enable_interrupt(&adcb_ch_conf);
     //adcch_write_configuration(&ADCA,1,&adca_ch_conf);
   
-	//
+	///* Configure ADC channel 2: motor4 current feedback
+    //* - Input: ADCB6
+    //* - interrupts disable
+    //*/
+    //adcch_read_configuration(&ADCB,1,&adca_ch_conf);
+    //adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN6,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
+    ////adcch_disable_interrupt(&adcb_ch_conf);
+    //adcch_write_configuration(&ADCB,2,&adca_ch_conf);
+    ////
+	
     ///* Configure ADC channel 2:
     //* - Input: ADCB6
     //* - interrupts disable
@@ -182,78 +289,13 @@ void ADCA_init(void)
     //adcch_enable_interrupt(&adcb_ch_conf);
     //adcch_write_configuration(&ADCB,3,&adcb_ch_conf);
     //
-    adc_enable(&ADCA);
-    adc_start_conversion(&ADCA,ADC_CH0);
-    //adc_start_conversion(&ADCB,ADC_CH1);
+    adc_enable(&ADCB);
+    adc_start_conversion(&ADCB,ADC_CH0);
+    adc_start_conversion(&ADCB,ADC_CH1);
     //adc_start_conversion(&ADCB,ADC_CH2);
     ////adc_start_conversion(&ADCB,ADC_CH3);
 }
-//void ADCA_init(void)
-//{
-    //struct adc_config adca_conf;
-    //struct adc_channel_config adca_ch_conf;
-    ////
-    ////// Initialize configuration structures.
-    ////adc_read_configuration(&ADCB, &adcb_conf);
-    ////
-    /////* Configure the ADC module:
-    ////* - unsigned, 12-bit results
-    ////* - AREFA voltage reference
-    ////* - 8000 kHz clock rate
-    ////* - FreeRun Mode
-    ////*/
-    //adc_get_calibration_data(ADC_CAL_ADCA);
-    //adc_set_conversion_parameters(&adca_conf,ADC_SIGN_OFF,ADC_RES_12,ADC_REF_AREFA);
-    //adc_set_clock_rate(&adca_conf,125000UL);
-    //adc_set_conversion_trigger(&adca_conf,ADC_TRIG_FREERUN_SWEEP,1,0);
-   //// adc_set_config_compare_value(adcb_conf,KCK_MAX_CHARGE_AMP);
-    //adc_write_configuration(&ADCA,&adca_conf);
-    ////
-    /////* Configure ADC channel 0:
-    ////* - Input: ADCB4
-    ////* - interrupts disable
-    ////*/
-    //adcch_read_configuration(&ADCA,1, &adca_ch_conf);
-    //adcch_set_input(&adca_ch_conf,ADCCH_POS_PIN3,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
-    //adcch_write_configuration(&ADCA,1,&adca_ch_conf);
-    //
-    /////* Configure ADC channel 1: darim az channel 0 estefade mikonim ehtemalan!
-    ////* - Input: ADCB5
-    ////* - Set Interrupt Mode: Below the threshold
-    ////* - interrupts disable
-    //////*/
-    ////adcch_read_configuration(&ADCA,1, &adca_ch_conf);
-    ////adcch_set_input(&adcb_ch_conf,ADCCH_POS_PIN5,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
-	//////adcch_set_interrupt_mode(&adcb_ch_conf,ADCCH_MODE_ABOVE);
-	//////adcch_enable_interrupt(&adcb_ch_conf);
-    ////adcch_write_configuration(&ADCA,1,&adca_ch_conf);
-  //
-	////
-    /////* Configure ADC channel 2:
-    ////* - Input: ADCB6
-    ////* - interrupts disable
-    ////*/
-    ////adcch_read_configuration(&ADCB,2, &adcb_ch_conf);
-    ////adcch_set_input(&adcb_ch_conf,ADCCH_POS_PIN6,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
-    //////adcch_disable_interrupt(&adcb_ch_conf);
-    ////adcch_write_configuration(&ADCB,2,&adcb_ch_conf);
-    //////
-    /////* Configure ADC channel 3:
-    ////* - Input: ADCB7
-    ////* - interrupts disable
-    ////*/
-    ////adcch_read_configuration(&ADCB,3, &adcb_ch_conf);
-    ////adcch_set_input(&adcb_ch_conf,ADCCH_POS_PIN7,ADCCH_NEG_NONE,ADC_CH_GAIN_1X_gc);
-    ////adcch_set_interrupt_mode(&adcb_ch_conf,ADCCH_MODE_ABOVE);
-    ////adcch_enable_interrupt(&adcb_ch_conf);
-    ////adcch_write_configuration(&ADCB,3,&adcb_ch_conf);
-    ////
-    //adc_enable(&ADCA);
-    //adc_start_conversion(&ADCA,ADC_CH0);
-    ////adc_start_conversion(&ADCB,ADC_CH1);
-    ////adc_start_conversion(&ADCB,ADC_CH2);
-    //////adc_start_conversion(&ADCB,ADC_CH3);
-//}
+
 
 void OUT_Bling(PORT_t *OUT_PORT,uint8_t OUT_PIN_bp,uint8_t Speed,uint32_t *Time_ON,uint32_t time_ms)
 {

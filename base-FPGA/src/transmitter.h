@@ -76,7 +76,7 @@ struct Robot_Send_Data
 };
 
 struct PCK_Header PCK_H;
-struct Robot_Data Robot_D[Max_Robot], Robot_D_tmp[Max_Robot];
+struct Robot_Data Robot_D[Max_Robot];
 
 struct PCK_Send_Header PCK_S_H;
 struct Robot_Send_Data Robot_S_D, Robot_S_D_tmp, Robot_S_D_tmp2;
