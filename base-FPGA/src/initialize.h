@@ -12,9 +12,24 @@
 
 #define ON 1
 #define OFF 0
- //ID1 ID0 ID3 ID2
+//ID1 ID0 ID3 ID2
 #define RobotID ((((PORTB_IN & PIN5_bm) >> PIN5_bp) << 0)|(((PORTA_IN & PIN7_bm) >> PIN7_bp) << 1)|(((PORTB_IN & PIN6_bm) >> PIN6_bp) << 2)|(((PORTB_IN & PIN4_bm) >> PIN4_bp) << 3))     
 //FPGA DATA
+
+
+#define PORTX_IN ( ((PORTA.IN & 0b00000110) >> 1) | ((PORTE.IN & 0b1110000) >> 2 ) | ((PORTR.IN & 0b0000011) << 6 ) ) //PORTX=R1,R0,E7,E6,E5,A2,A1
+#define PORTX0 PIN1_bm //A1
+#define PORTX1 PIN2_bm //A2
+#define PORTX2 PIN5_bm //E5
+#define PORTX3 PIN6_bm //E6
+#define PORTX4 PIN7_bm //E7
+#define PORTX5 PIN0_bm //R0
+#define PORTX6 PIN1_bm //R1
+#define PORTX7 PIN1_bm //NULL
+#define CLK_PORT PORTF
+#define CLK_PIN PIN7_bm
+
+
 #define CLK_par_bm PIN1_bm 
 #define CLK_par_bp PIN1_bp 
 #define CLK_par_PORT PORTA
@@ -30,9 +45,7 @@
 #define FPGA_DATA6_bm	PIN6_bm	
 #define FPGA_DATA7_bm	PIN7_bm	
 #define FPGA_DATA_PORT  PORTF
-#define MOTORNUM0_bm	PIN0_bm	
-#define MOTORNUM1_bm	PIN1_bm	 
-#define MOTORNUM_PORT   PORTR
+
 //FPGA SPI//////////	PORTE
 #define MOSI_CUR1_bm PIN5_bm
 #define MISO_CUR1_bm PIN6_bm

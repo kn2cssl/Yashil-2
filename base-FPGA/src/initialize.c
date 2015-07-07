@@ -25,8 +25,8 @@ void En_RC32M(void)
 
 void PORT_init(void)
 {   
-	PORTA_DIRSET = CLK_par_bm | PARITY_bm; 
-	//PORTB.7 SOOKHTE!
+	//PORTA_DIRSET =  
+	PORTE_OUTSET = PORTX0 | PORTX1 ;
 	PORTC_DIRSET =  KCK_DIR_PIN_bm | KCK_SH_PIN_bm | Gyro_SCL_PIN_bm | KCK_Chip_PIN_bm ;
 			//PORTC_PIN0CTRL |= PORT_ISC_LEVEL_gc;  //vase chie??
 			//PORTC_INTCTRL |= PORT_INT0LVL_LO_gc;
@@ -38,12 +38,12 @@ void PORT_init(void)
 	PORTD_INT0MASK = PIN2_bm;
 	
 	PORTE_DIRSET = STARTBIT_bm | MOSI_CUR1_bm | Buzzer_PIN_bm | TX_Data_PIN_bm | LED_Green_PIN_bm | LED_White_PIN_bm | LED_Red_PIN_bm;
-	//PORTE.OUTSET = PIN3_bm;//TX pin on PORTE
+	PORTE_OUTSET = PORTX4 | PORTX3 | PORTX2;//TX pin on PORTE//KAMIN
 	
 	PORTF_DIRSET = FPGA_DATA0_bm | FPGA_DATA1_bm | FPGA_DATA2_bm | FPGA_DATA3_bm | FPGA_DATA4_bm | FPGA_DATA5_bm | FPGA_DATA6_bm | FPGA_DATA7_bm; 
 	//PORTF_OUTSET = FPGA_DATA0_bm | FPGA_DATA1_bm | FPGA_DATA2_bm | FPGA_DATA3_bm | FPGA_DATA4_bm | FPGA_DATA5_bm | FPGA_DATA6_bm | FPGA_DATA7_bm;
-	PORTR_DIRSET = MOTORNUM0_bm | MOTORNUM1_bm;
-	//PORTR_OUTSET = MOTORNUM0_bm | MOTORNUM1_bm;
+	//PORTR_DIRSET = MOTORNUM0_bm | MOTORNUM1_bm;
+	PORTR_OUTSET = PORTX5 | PORTX6;//KAMIN
 };
 
 //#define TIMERD0_PER 0xE0
@@ -94,10 +94,10 @@ void TimerC1_init(void) // KICK_CHIP -> OC1A (PORTC4)
 	tc_enable(&TCC1);
 	//tc_write_cc(&TCC1,TC_CCA,0x5D);
 }
-#define TIMERE1_PER 0x7C // per=0xD7,DIV256 => 1.728ms  // per=0x7c,DIV256 => 1ms
+#define TIMERE1_PER 0x140 // per=0xD7,DIV256 => 1.728ms  // per=0x140,DIV1 => 10us
 void TimerE1_init(void)
 {
-    tc_write_clock_source(&TCE1,TC_CLKSEL_DIV256_gc);
+    tc_write_clock_source(&TCE1,TC_CLKSEL_DIV1_gc);
     tc_set_wgm(&TCE1,TC_WG_NORMAL);
     tc_set_overflow_interrupt_level(&TCE1,TC_INT_LVL_MED);
     tc_write_period(&TCE1,TIMERE1_PER);
