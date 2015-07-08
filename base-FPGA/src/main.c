@@ -210,9 +210,7 @@ int main (void)
 }
 
 int counter_10us=0,counter_1ms=0,counter3=0;
-uint64_t timectrl;//,time2sec;
-int timectrl2;//,time2sec;
-long int t_alarm;
+
  ISR(TCE1_OVF_vect)//10us
  {
 	 if (new_wireless_data==true)
@@ -236,19 +234,8 @@ long int t_alarm;
 	{
 		counter3+=1;
 		counter_1ms=0;
-		
-		LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
-					
+		LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;				
 	}
-
-	if (counter3>60)//10s
-	{
-		counter3=0;
-		LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;
-
-	}
-
-	sei();
  }
 
 
