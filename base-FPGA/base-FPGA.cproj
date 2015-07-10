@@ -341,9 +341,6 @@
     <Compile Include="src\nrf24l01_L.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\transmitter.h">
-      <SubType>compile</SubType>
-    </Compile>
     <None Include="src\ASF\xmega\drivers\usart\usart.h">
       <SubType>compile</SubType>
     </None>
