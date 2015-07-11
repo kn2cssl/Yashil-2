@@ -29,6 +29,9 @@ void packing_data ( void ) ;
 enum Data_Flow {new_wireless_data , new_jyro_data , data_packing , communication , nothing };
 enum Data_Flow data;
 
+enum data_counter {even=0 , odd=1};
+enum data_counter d_counter;
+
 struct Robot_Data
 {
 	//wireless data
@@ -58,10 +61,8 @@ struct Robot_Data
 
 uint8_t temp_data[20];
 uint8_t received_data[20];
-uint64_t send_packet0;
-uint64_t send_packet1;
-uint64_t receive_packet0;
-uint64_t receive_packet1;
+uint64_t send_packet[2];
+uint64_t receive_packet [2];
 int counter_10us=0,counter_1ms=0,counter3=0;
 //================================
 
@@ -186,6 +187,7 @@ int main (void)
 		{
 			packing_data () ;
 			counter_10us = 0 ;
+			tc_enable(&TCE1) ;
 			data = communication ;
 		}
 		
@@ -197,8 +199,8 @@ int main (void)
 		
 		if (data == nothing)
 		{
-			//counter_10us = 0;
-			//data = communication;
+			tc_disable(&TCE1) ;
+			//data = data_packing;
 		}
 
 	}
@@ -216,24 +218,7 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 ISR(TCE1_OVF_vect)//10us
 {
 	counter_10us++;
-	CLK_PORT.OUTTGL = CLK_PIN;
-	//
-	//if (counter_10us == 100)//1ms
-	//{
-		//
-		//counter_1ms ++ ;
-		//counter_10us = 0 ;
-				//LED_Red_PORT.OUTCLR = LED_Red_PIN_bm;
-				//LED_White_PORT.OUTCLR = LED_White_PIN_bm;
-	//}
-//
-	//if (counter_1ms == 1000)//1s
-	//{
-//
-		//counter3+=1;
-		//counter_1ms=0;
-		////LED_GR_PORT.OUTTGL = LED_Red_PIN_bm;
-	//}
+	//CLK_PORT.OUTTGL = CLK_PIN;
 }
 
 
@@ -357,72 +342,103 @@ void data_transmission (void)
 
 void packing_data ( void ) 
 {
-
-		//Robot.Vxl = 0xfa;
 		uint8_t check_sum0 = Robot.alphal + Robot.Wh + Robot.Wl + Robot.Vyh + Robot.Vyl + Robot.Vxh + Robot.Vxl ;
 		uint8_t check_sum1 = Robot.alphah + Robot.JWh + Robot.JWl + Robot.JVyh + Robot.JVyl + Robot.JVxh + Robot.JVxl ;
 					
-		send_packet0 = 72057628399779969;check_sum0<<56 | Robot.alphal<<48 |Robot.Wh<<40
+		send_packet [ 0 ] = check_sum0<<56 | Robot.alphal<<48 |Robot.Wh<<40
 		| Robot.Wl<<32 | Robot.Vyh<<24 | Robot.Vyl<<16
 		| Robot.Vxh<<8 | Robot.Vxl ; //MSB of check_sum won't be sent
 
-		send_packet1 = 72057628399779969;check_sum1<<56 | Robot.alphah<<48 |Robot.JWh<<40
+		send_packet [ 1 ] = check_sum1<<56 | Robot.alphah<<48 |Robot.JWh<<40
 		| Robot.JWl<<32 | Robot.JVyh<<24 | Robot.JVyl<<16
-		| Robot.JVxh<<8 | Robot.JVxl ; //MSB of check_sum won't be sent
-					
+		| Robot.JVxh<<8 | Robot.JVxl ; //MSB of check_sum won't be sent			
 }
 
 
 
 void fpga_connection ( void )
 {
-	switch (counter_10us)
-	{
-		case 0: //start bits1
-		PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
-		break ;
-		
-		case 1:
-		//nothing
-		break ;
-		
-		case 2: //start bits2
-		PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
-		break ;
-		
-		case 3:
-		//nothing
-		break ;
-	}
+	int j = 0 ;
+	if (counter_10us > 21) j = 1 ; //4 start packets + 18 of first array  >> 4 + 18 = 22 >> 0 to 21 >> second array starts from 22 to 39
 	
-	if (counter_10us < 22 && counter_10us > 3)
+	if (counter_10us < 4)
 	{
-		if (counter_10us % 2 == 0 )
+		if ( d_counter == even)
 		{
-			PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet0 & 0x0000007F ) ;
-			send_packet0 = send_packet0 >> 7 ;
+			PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
+			CLK_PORT.OUTSET = CLK_PIN ;
 		}
 		else
 		{
-			receive_packet0 = receive_packet0 << 7 ;
-			receive_packet0 = PORTX_IN | receive_packet0 ;
+			CLK_PORT.OUTCLR = CLK_PIN ;
 		}
 	}
-	
-	
-	if (counter_10us > 21)
+	else
 	{
-		if (counter_10us % 2 == 0 )
+		if ( d_counter == even )
 		{
-			PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet1 & 0x0000007F ) ;
-			send_packet1 = send_packet1 >> 7 ;
+			PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet [ j ] & 0x0000007F ) ;
+			send_packet [ j ] = send_packet [ j ] >> 7 ;
+			CLK_PORT.OUTSET = CLK_PIN ;
 		}
 		else
 		{
-			receive_packet1 = receive_packet1 << 7 ;
-			receive_packet1 = PORTX_IN | receive_packet1 ;
+			receive_packet [j] = receive_packet [j] << 7 ;
+			receive_packet [j] = PORTX_IN | receive_packet [j] ;
+			CLK_PORT.OUTCLR = CLK_PIN ;
 		}
 	}
+	
+	
+	//switch (counter_10us)
+	//{
+		//case 0: //start bits1
+		//PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
+		//break ;
+		//
+		//case 1:
+		////nothing
+		//break ;
+		//
+		//case 2: //start bits2
+		//PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
+		//break ;
+		//
+		//case 3:
+		////nothing
+		//break ;
+	//}
+	
+	//if (counter_10us < 22 && counter_10us > 3)
+	//{
+		//if (counter_10us % 2 == 0 )
+		//{
+			//PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet [ 0 ] & 0x0000007F ) ;
+			//send_packet [ 0 ] = send_packet [ 0 ] >> 7 ;
+		//}
+		//else
+		//{
+			//receive_packet [0] = receive_packet [0] << 7 ;
+			//receive_packet [0] = PORTX_IN | receive_packet [0] ;
+		//}
+	//}
+	//
+	//
+	//if (counter_10us > 21)
+	//{
+		//if (counter_10us % 2 == 0 )
+		//{
+			//PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet [ 1 ] & 0x0000007F ) ;
+			//send_packet [ 1 ] = send_packet [ 1 ] >> 7 ;
+		//}
+		//else
+		//{
+			//receive_packet [1] = receive_packet [1] << 7 ;
+			//receive_packet [1] = PORTX_IN | receive_packet [1] ;
+		//}
+	//}
+	
+	
 	
 	if (counter_10us == 39)
 	{
@@ -431,13 +447,13 @@ void fpga_connection ( void )
 		{
 			if(i<9)
 			{
-				temp_data[i] = receive_packet0 & 0x000000FF ;
-				receive_packet0 = receive_packet0 >> 8 ;
+				temp_data[i] = receive_packet [0] & 0x000000FF ;
+				receive_packet [0] = receive_packet [0] >> 8 ;
 			}
 			else
 			{
-				temp_data[i] = receive_packet1 & 0x000000FF ;
-				receive_packet1 = receive_packet1 >> 8 ;
+				temp_data[i] = receive_packet [1] & 0x000000FF ;
+				receive_packet [1] = receive_packet [1] >> 8 ;
 			}
 			
 			
