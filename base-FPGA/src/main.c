@@ -19,6 +19,7 @@ void every1ms ( void ) ;
 void fpga_connection ( void ) ;
 void wireless_connection ( void ) ;
 void packing_data ( void ) ;
+void data_unpacking ( void ) ;
 
 
 //================================
@@ -26,7 +27,7 @@ void packing_data ( void ) ;
 //bool connection_permission = false ;
 //bool packing_pemission = false ;
 
-enum Data_Flow {new_wireless_data , new_jyro_data , data_packing , communication , nothing };
+enum Data_Flow {new_wireless_data , new_jyro_data , data_packing , communication , unpacking_data , other_programs };
 enum Data_Flow data;
 
 enum data_counter {even=0 , odd=1};
@@ -63,7 +64,8 @@ uint8_t temp_data[20];
 uint8_t received_data[20];
 uint64_t send_packet[2];
 uint64_t receive_packet [2];
-int counter_10us=0,counter_1ms=0,counter3=0;
+int counter_10us=0,counter_1ms=0,counter3=0,packet_counter=0;
+uint32_t cco=0;
 //================================
 
 unsigned char Buf_Rx_L[_Buffer_Size] ;
@@ -146,7 +148,7 @@ int main (void)
 	//TimerC0_init();
 	//TimerC1_init();
 	//TimerE0_init();
-	TimerE1_init();
+	//TimerE1_init();
 	//USARTE0_init();
 	//ADCA_init();
 	//ADCB_init();
@@ -162,47 +164,52 @@ int main (void)
 	
 	
 	sei();
-		
+	
 	while(1)
 	{
 		
-//================================================WIRELESS DATA
+		//================================================WIRELESS DATA
 		if (data == new_wireless_data)
 		{
 			wireless_connection();
 			data = data_packing ;
 		}
 		_delay_us(1);
-//-------------------------------------------------------------
+		//-------------------------------------------------------------
 
-//================================================JYRO DATA
+		//================================================JYRO DATA
 		//if (data == new_jyro_data)
 		//{
-			//data = data_packing ;
+		//data = data_packing ;
 		//}
 		//_delay_us(1);
-//-------------------------------------------------------------
+		//-------------------------------------------------------------
 
 		if (data == data_packing)
 		{
 			packing_data () ;
-			counter_10us = 0 ;
-			tc_enable(&TCE1) ;
+			packet_counter = 0 ;
+			d_counter = even ;
 			data = communication ;
 		}
 		
-		data = communication;
 		if (data == communication)
 		{
 			fpga_connection () ;
+			packet_counter++;
 		}
 		
-		if (data == nothing)
+		if (data == unpacking_data)
 		{
-			tc_disable(&TCE1) ;
-			//data = data_packing;
+			data_unpacking () ;
+			data = other_programs ;
 		}
-
+		
+		if (data == other_programs)
+		{
+			//other_programs
+		}
+		
 	}
 	
 }
@@ -210,14 +217,27 @@ int main (void)
 
 ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt Pin
 {
-	data = new_wireless_data ;
+	data = new_wireless_data ;	//test
 }
 
 
 
 ISR(TCE1_OVF_vect)//10us
 {
-	counter_10us++;
+	//counter_10us++;
+	
+	
+	if (counter_10us == 39)
+	{
+		counter_1ms++;
+	}
+	if (counter_1ms == 1000)
+	{
+		counter_1ms = 0;
+		LED_White_PORT.OUTCLR = LED_White_PIN_bm;//test
+		
+	}
+	
 	//CLK_PORT.OUTTGL = CLK_PIN;
 }
 
@@ -314,14 +334,14 @@ void data_transmission (void)
 	Test_Data[4] = counter_1ms;
 	
 	
-	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
-	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
-	Buf_Tx_L[2]  = (Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
-	Buf_Tx_L[3]  = Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
-	Buf_Tx_L[4]  = (Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
-	Buf_Tx_L[5]  = Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
-	Buf_Tx_L[6]  = (Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
-	Buf_Tx_L[7]  = Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
+	Buf_Tx_L[0]  = received_data[1];//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
+	Buf_Tx_L[1]  = received_data[0];//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
+	Buf_Tx_L[2]  = received_data[3];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
+	Buf_Tx_L[3]  = received_data[2];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
+	Buf_Tx_L[4]  = received_data[5];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
+	Buf_Tx_L[5]  = received_data[4];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
+	Buf_Tx_L[6]  = received_data[7];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
+	Buf_Tx_L[7]  = received_data[6];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
 	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
 	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
 	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
@@ -331,8 +351,21 @@ void data_transmission (void)
 	Buf_Tx_L[14] = (Test_Data[7]>> 8) & 0xFF;	// battery voltage
 	Buf_Tx_L[15] = Test_Data[7] & 0xFF;			// battery voltage
 	Buf_Tx_L[16] = adc/12;						//battery adc
-	
-
+// 	Buf_Tx_L[17] = 
+// 	Buf_Tx_L[18] = 
+// 	Buf_Tx_L[19] = 
+// 	Buf_Tx_L[20] =
+// 	Buf_Tx_L[21] =
+// 	Buf_Tx_L[22] =
+// 	Buf_Tx_L[23] =
+// 	Buf_Tx_L[24] =
+// 	Buf_Tx_L[25] =
+// 	Buf_Tx_L[26] =
+// 	Buf_Tx_L[27] =
+// 	Buf_Tx_L[28] =
+// 	Buf_Tx_L[29] =
+// 	Buf_Tx_L[30] =
+// 	Buf_Tx_L[31] =
 	//LED_Red_PORT.OUTTGL = LED_Red_PIN_bm;
 	NRF24L01_L_Write_TX_Buf(Buf_Tx_L, _Buffer_Size);
 	//NRF24L01_L_RF_TX();
@@ -340,37 +373,36 @@ void data_transmission (void)
 
 
 
-void packing_data ( void ) 
+void packing_data ( void )
 {
-		uint8_t check_sum0 = Robot.alphal + Robot.Wh + Robot.Wl + Robot.Vyh + Robot.Vyl + Robot.Vxh + Robot.Vxl ;
-		uint8_t check_sum1 = Robot.alphah + Robot.JWh + Robot.JWl + Robot.JVyh + Robot.JVyl + Robot.JVxh + Robot.JVxl ;
-					
-		send_packet [ 0 ] = check_sum0<<56 | Robot.alphal<<48 |Robot.Wh<<40
-		| Robot.Wl<<32 | Robot.Vyh<<24 | Robot.Vyl<<16
-		| Robot.Vxh<<8 | Robot.Vxl ; //MSB of check_sum won't be sent
+	uint8_t check_sum0 = Robot.alphal + Robot.Wh + Robot.Wl + Robot.Vyh + Robot.Vyl + Robot.Vxh + Robot.Vxl ;
+	uint8_t check_sum1 = Robot.alphah + Robot.JWh + Robot.JWl + Robot.JVyh + Robot.JVyl + Robot.JVxh + Robot.JVxl ;
+	
+	send_packet [ 0 ] = 0xAAAAAAAAAAAAAAAA; check_sum0<<56 | Robot.alphal<<48 |Robot.Wh<<40
+	| Robot.Wl<<32 | Robot.Vyh<<24 | Robot.Vyl<<16
+	| Robot.Vxh<<8 | Robot.Vxl ; //MSB of check_sum won't be sent
 
-		send_packet [ 1 ] = check_sum1<<56 | Robot.alphah<<48 |Robot.JWh<<40
-		| Robot.JWl<<32 | Robot.JVyh<<24 | Robot.JVyl<<16
-		| Robot.JVxh<<8 | Robot.JVxl ; //MSB of check_sum won't be sent			
+	send_packet [ 1 ] = 0xAAAAAAAAAAAAAAAA;check_sum1<<56 | Robot.alphah<<48 |Robot.JWh<<40
+	| Robot.JWl<<32 | Robot.JVyh<<24 | Robot.JVyl<<16
+	| Robot.JVxh<<8 | Robot.JVxl ; //MSB of check_sum won't be sent
 }
-
 
 
 void fpga_connection ( void )
 {
 	int j = 0 ;
-	if (counter_10us > 21) j = 1 ; //4 start packets + 18 of first array  >> 4 + 18 = 22 >> 0 to 21 >> second array starts from 22 to 39
+	if (packet_counter > 21) j = 1 ; //4 start packets + 18 of first array  >> 4 + 18 = 22 >> 0 to 21 >> second array starts from 22 to 39
 	
-	if (counter_10us < 4)
+	if (packet_counter < 4)
 	{
 		if ( d_counter == even)
 		{
 			PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
-			CLK_PORT.OUTSET = CLK_PIN ;
+			CLK_PORT.OUTCLR = CLK_PIN ;
 		}
 		else
 		{
-			CLK_PORT.OUTCLR = CLK_PIN ;
+			CLK_PORT.OUTSET = CLK_PIN ;
 		}
 	}
 	else
@@ -379,110 +411,73 @@ void fpga_connection ( void )
 		{
 			PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet [ j ] & 0x0000007F ) ;
 			send_packet [ j ] = send_packet [ j ] >> 7 ;
-			CLK_PORT.OUTSET = CLK_PIN ;
+			CLK_PORT.OUTCLR = CLK_PIN ;
 		}
 		else
 		{
 			receive_packet [j] = receive_packet [j] << 7 ;
 			receive_packet [j] = PORTX_IN | receive_packet [j] ;
-			CLK_PORT.OUTCLR = CLK_PIN ;
+			CLK_PORT.OUTSET = CLK_PIN ;
 		}
 	}
 	
+	d_counter = ! d_counter;
 	
-	//switch (counter_10us)
-	//{
-		//case 0: //start bits1
-		//PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
-		//break ;
-		//
-		//case 1:
-		////nothing
-		//break ;
-		//
-		//case 2: //start bits2
-		//PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
-		//break ;
-		//
-		//case 3:
-		////nothing
-		//break ;
-	//}
+
 	
-	//if (counter_10us < 22 && counter_10us > 3)
-	//{
-		//if (counter_10us % 2 == 0 )
-		//{
-			//PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet [ 0 ] & 0x0000007F ) ;
-			//send_packet [ 0 ] = send_packet [ 0 ] >> 7 ;
-		//}
-		//else
-		//{
-			//receive_packet [0] = receive_packet [0] << 7 ;
-			//receive_packet [0] = PORTX_IN | receive_packet [0] ;
-		//}
-	//}
-	//
-	//
-	//if (counter_10us > 21)
-	//{
-		//if (counter_10us % 2 == 0 )
-		//{
-			//PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet [ 1 ] & 0x0000007F ) ;
-			//send_packet [ 1 ] = send_packet [ 1 ] >> 7 ;
-		//}
-		//else
-		//{
-			//receive_packet [1] = receive_packet [1] << 7 ;
-			//receive_packet [1] = PORTX_IN | receive_packet [1] ;
-		//}
-	//}
-	
-	
-	
-	if (counter_10us == 39)
+	if (packet_counter == 39)
 	{
-		//unpacking data from FPGA
-		for (int i =0 ; i ; i < 16 )
-		{
-			if(i<9)
-			{
-				temp_data[i] = receive_packet [0] & 0x000000FF ;
-				receive_packet [0] = receive_packet [0] >> 8 ;
-			}
-			else
-			{
-				temp_data[i] = receive_packet [1] & 0x000000FF ;
-				receive_packet [1] = receive_packet [1] >> 8 ;
-			}
-			
-			
-		}
-		
-		//generating check_sum
-		uint8_t check_sum_test0 = 0 ;
-		uint8_t check_sum_test1 = 0 ;
-		for (int i = 0 ; i++ ; i < 7)
-		{
-			check_sum_test0 +=  temp_data[i] ;
-		}
-		
-		for (int i = 8 ; i++ ; i < 15)
-		{
-			check_sum_test1 +=  temp_data[i] ;
-		}
-		
-		//saving checked data
-		if( ( (check_sum_test0 & 0x7F) == temp_data[7] ) && ( (check_sum_test1 & 0x7F) == temp_data[15] ))
-		{
-			for (int i = 0 ; i++ ; i < 16)
-			{
-				received_data[i] = temp_data[i] ;
-			}
-		}
-		
-		data = nothing ;
+				cco ++ ;
+				if (cco == 1000)
+				{
+					LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;//test
+					cco=0;
+				}
+		data = unpacking_data ;
 	}
 
 
+}
+
+
+void data_unpacking (void)
+{
+	//unpacking data from FPGA
+	for (int i =0 ; i ; i < 16 )
+	{
+		if(i<9)
+		{
+			temp_data[i] = receive_packet [0] & 0x000000FF ;
+			receive_packet [0] = receive_packet [0] >> 8 ;
+		}
+		else
+		{
+			temp_data[i] = receive_packet [1] & 0x000000FF ;
+			receive_packet [1] = receive_packet [1] >> 8 ;
+		}
+		
+		
+	}
+	
+	//generating check_sum
+	uint8_t check_sum_test0 = 0 ;
+	uint8_t check_sum_test1 = 0 ;
+	for (int i = 0 ; i++ ; i < 7)
+	{
+		check_sum_test0 +=  temp_data[i] ;
+	}
+	
+	for (int i = 8 ; i++ ; i < 15)
+	{
+		check_sum_test1 +=  temp_data[i] ;
+	}
+	
+	//saving checked data
+	if( ( (check_sum_test0 & 0x7F) == temp_data[7] ) && ( (check_sum_test1 & 0x7F) == temp_data[15] ))
+	{
+		for (int i = 0 ; i++ ; i < 16)
+		{
+			received_data[i] = temp_data[i] ;
+		}
+	}
 }
