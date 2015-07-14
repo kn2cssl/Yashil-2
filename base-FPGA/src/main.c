@@ -453,14 +453,14 @@ void data_unpacking (void)
 	temp_data[15] = ( receive_packet[39] & 0b01111111 ) ;
 	
 	//generating check_sum
-	uint8_t check_sum_test0 ;
-	uint8_t check_sum_test1 ;
-	for (int i = 0 ; i++ ; i < 7)
+	uint8_t check_sum_test0 = 0 ;
+	uint8_t check_sum_test1 = 0;
+	for (int i = 0 ; i < 7 ; i++)
 	{
 		check_sum_test0 +=  temp_data[i] ;
 	}
 	
-	for (int i = 8 ; i++ ; i < 15)
+	for (int i = 8 ; i < 15 ; i++ )
 	{
 		check_sum_test1 +=  temp_data[i] ;
 	}
@@ -468,7 +468,7 @@ void data_unpacking (void)
 	//saving checked data
 	if( ( (check_sum_test0 & 0x7F) == temp_data[7] ) && ( (check_sum_test1 & 0x7F) == temp_data[15] ))
 	{
-		for (int i = 0 ; i++ ; i < 16)
+		for (int i = 0 ; i < 16 ; i++)
 		{
 			received_data[i] = temp_data[i] ;
 		}
