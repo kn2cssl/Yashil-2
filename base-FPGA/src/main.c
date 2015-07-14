@@ -66,8 +66,11 @@ uint64_t receive_packet [40];
 uint8_t temp_data[20];
 uint8_t received_data[20];
 
-int counter_10us=0,counter_1ms=0,counter3=0,packet_counter=0,wl_counter=0;
+int counter_100ms=0,packet_counter=0,wl_counter=0;
 uint32_t cco=0;
+int rate=0;
+int rate_counter=0;
+bool wireless_ok=false;
 //================================
 
 unsigned char Buf_Rx_L[_Buffer_Size] ;
@@ -150,7 +153,7 @@ int main (void)
 	//TimerC0_init();
 	//TimerC1_init();
 	//TimerE0_init();
-	//TimerE1_init();
+	TimerE1_init();
 	//USARTE0_init();
 	//ADCA_init();
 	//ADCB_init();
@@ -211,6 +214,11 @@ int main (void)
 		if (data == other_programs)
 		{
 			//other_programs
+			if (!wireless_ok)
+			{
+				data = packing_data ;
+			}
+			
 		}
 		
 	}
@@ -220,13 +228,25 @@ int main (void)
 
 ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt Pin
 {
-	data = new_wireless_data ;
+	if (wireless_ok)
+	{
+		data = new_wireless_data ;
+	}
+	
 }
 
 
 
-ISR(TCE1_OVF_vect)//10us
+ISR(TCE1_OVF_vect)//0.1s
 {
+	counter_100ms++;
+	if (counter_100ms==100)
+	{
+		tc_disable(&TCE1);
+		rate = rate_counter;
+		wireless_ok=true;
+		NRF_init () ;
+	}
 }
 
 
@@ -317,13 +337,14 @@ void data_transmission (void)
 
 	//Test_Data[4] = adc*0.4761;//battery voltage
 	Test_Data[0] = (received_data[0] & 0x00ff) | ((received_data[1] & 0x00ff ) <<8);
+	Test_Data[1] = rate;
 	Test_Data[4] = wl_counter;
 	
 	
 	Buf_Tx_L[0]  = 0;//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
 	Buf_Tx_L[1]  = PORTX_IN;//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
-	Buf_Tx_L[2]  = received_data[3];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
-	Buf_Tx_L[3]  = received_data[2];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
+	Buf_Tx_L[2]  = (Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
+	Buf_Tx_L[3]  = Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
 	Buf_Tx_L[4]  = received_data[5];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
 	Buf_Tx_L[5]  = received_data[4];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
 	Buf_Tx_L[6]  = received_data[7];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
@@ -422,6 +443,7 @@ void fpga_connection ( void )
 				{
 					LED_Green_PORT.OUTTGL = LED_Green_PIN_bm;//test
 					cco=0;
+					rate_counter++;
 				}
 		data = unpacking_data ;
 	}
