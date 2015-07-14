@@ -214,10 +214,10 @@ int main (void)
 		if (data == other_programs)
 		{
 			//other_programs
-			if (!wireless_ok)
-			{
-				data = packing_data ;
-			}
+			//if (!wireless_ok)
+			//{
+				//data = packing_data ;
+			//}
 			
 		}
 		
@@ -228,10 +228,12 @@ int main (void)
 
 ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt Pin
 {
-	if (wireless_ok)
-	{
-		data = new_wireless_data ;
-	}
+	//if (wireless_ok)
+	//{
+		//data = new_wireless_data ;
+	//}
+	
+	data = new_wireless_data ;
 	
 }
 
@@ -239,14 +241,14 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 
 ISR(TCE1_OVF_vect)//0.1s
 {
-	counter_100ms++;
-	if (counter_100ms==100)
-	{
-		tc_disable(&TCE1);
-		rate = rate_counter;
-		wireless_ok=true;
-		NRF_init () ;
-	}
+	//counter_100ms++;
+	//if (counter_100ms==100)
+	//{
+		//tc_disable(&TCE1);
+		//rate = rate_counter;
+		//wireless_ok=true;
+		//NRF_init () ;
+	//}
 }
 
 
