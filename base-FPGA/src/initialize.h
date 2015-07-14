@@ -17,7 +17,7 @@
 //FPGA DATA
 
 
-#define PORTX_IN ( ((PORTA.IN & 0b00000110) >> 1) | ((PORTE.IN & 0b1110000) >> 2 ) | ((PORTR.IN & 0b0000011) << 6 ) ) //PORTX=R1,R0,E7,E6,E5,A2,A1
+#define PORTX_IN ( ((PORTA.IN & 0b00000110) >> 1) | ((PORTE.IN & 0b11100000) >> 3 ) | ((PORTR.IN & 0b0000011) << 5 ) ) //PORTX=R1,R0,E7,E6,E5,A2,A1
 #define PORTX0 PIN1_bm //A1
 #define PORTX1 PIN2_bm //A2
 #define PORTX2 PIN5_bm //E5
