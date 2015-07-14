@@ -18,7 +18,7 @@ void data_transmission ( void ) ;
 void every1ms ( void ) ;
 void fpga_connection ( void ) ;
 void wireless_connection ( void ) ;
-void packing_data ( void ) ;
+void data_packing ( void ) ;
 void data_unpacking ( void ) ;
 
 
@@ -27,7 +27,7 @@ void data_unpacking ( void ) ;
 //bool connection_permission = false ;
 //bool packing_pemission = false ;
 
-enum Data_Flow {new_wireless_data , new_jyro_data , data_packing , communication , unpacking_data , other_programs };
+enum Data_Flow {new_wireless_data , new_jyro_data , packing_data , communication , unpacking_data , other_programs };
 enum Data_Flow data;
 
 enum data_counter {even=0 , odd=1};
@@ -49,22 +49,24 @@ struct Robot_Data
 	uint8_t CHP;
 	uint8_t ASK;
 	
-	//jyro data
+	//gyro data
 	
-	uint8_t JVxh;
-	uint8_t JVxl;
-	uint8_t JVyh;
-	uint8_t JVyl;
-	uint8_t JWh;
-	uint8_t JWl;
+	uint8_t GVxh;
+	uint8_t GVxl;
+	uint8_t GVyh;
+	uint8_t GVyl;
+	uint8_t GWh;
+	uint8_t GWl;
 	
 }Robot;
 
+uint64_t send_packet[40];
+uint64_t receive_packet [40];
+
 uint8_t temp_data[20];
 uint8_t received_data[20];
-uint64_t send_packet[2];
-uint64_t receive_packet [2];
-int counter_10us=0,counter_1ms=0,counter3=0,packet_counter=0;
+
+int counter_10us=0,counter_1ms=0,counter3=0,packet_counter=0,wl_counter=0;
 uint32_t cco=0;
 //================================
 
@@ -172,22 +174,23 @@ int main (void)
 		if (data == new_wireless_data)
 		{
 			wireless_connection();
-			data = data_packing ;
+			data = packing_data ;
+			wl_counter ++;
 		}
 		_delay_us(1);
 		//-------------------------------------------------------------
 
-		//================================================JYRO DATA
+		//================================================GYRO DATA
 		//if (data == new_jyro_data)
 		//{
-		//data = data_packing ;
+		//data = packing_data ;
 		//}
 		//_delay_us(1);
 		//-------------------------------------------------------------
 
-		if (data == data_packing)
+		if (data == packing_data)
 		{
-			packing_data () ;
+			data_packing () ;
 			packet_counter = 0 ;
 			d_counter = even ;
 			data = communication ;
@@ -217,28 +220,13 @@ int main (void)
 
 ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt Pin
 {
-	data = new_wireless_data ;	//test
+	data = new_wireless_data ;
 }
 
 
 
 ISR(TCE1_OVF_vect)//10us
 {
-	//counter_10us++;
-	
-	
-	if (counter_10us == 39)
-	{
-		counter_1ms++;
-	}
-	if (counter_1ms == 1000)
-	{
-		counter_1ms = 0;
-		LED_White_PORT.OUTCLR = LED_White_PIN_bm;//test
-		
-	}
-	
-	//CLK_PORT.OUTTGL = CLK_PIN;
 }
 
 
@@ -297,7 +285,6 @@ void wireless_connection ( void )
 }
 
 
-
 void NRF_init (void)
 {
 	NRF24L01_L_CE_LOW;       //disable transceiver modes
@@ -324,18 +311,17 @@ void NRF_init (void)
 }
 
 
-
 void data_transmission (void)
 {
 	//transmitting data to wireless board/////////////////////////////////////////////////
 
 	//Test_Data[4] = adc*0.4761;//battery voltage
 	Test_Data[0] = (received_data[0] & 0x00ff) | ((received_data[1] & 0x00ff ) <<8);
-	Test_Data[4] = counter_1ms;
+	Test_Data[4] = wl_counter;
 	
 	
-	Buf_Tx_L[0]  = received_data[1];//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
-	Buf_Tx_L[1]  = received_data[0];//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
+	Buf_Tx_L[0]  = 0;//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
+	Buf_Tx_L[1]  = PORTX_IN;//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
 	Buf_Tx_L[2]  = received_data[3];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
 	Buf_Tx_L[3]  = received_data[2];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
 	Buf_Tx_L[4]  = received_data[5];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
@@ -372,57 +358,61 @@ void data_transmission (void)
 }
 
 
-
-void packing_data ( void )
+void data_packing ( void )
 {
-	uint8_t check_sum0 = Robot.alphal + Robot.Wh + Robot.Wl + Robot.Vyh + Robot.Vyl + Robot.Vxh + Robot.Vxl ;
-	uint8_t check_sum1 = Robot.alphah + Robot.JWh + Robot.JWl + Robot.JVyh + Robot.JVyl + Robot.JVxh + Robot.JVxl ;
+	uint8_t check_sum0 = Robot.alphah + Robot.GWh + Robot.GVyh + Robot.GVxh + Robot.Wh + Robot.Vyh + Robot.Vxh ;
+	uint8_t check_sum1 = Robot.alphal + Robot.GWl + Robot.GVyl + Robot.GVxl + Robot.Wl + Robot.Vyl + Robot.Vxl ;
 	
-	send_packet [ 0 ] = 0xAAAAAAAAAAAAAAAA; check_sum0<<56 | Robot.alphal<<48 |Robot.Wh<<40
-	| Robot.Wl<<32 | Robot.Vyh<<24 | Robot.Vyl<<16
-	| Robot.Vxh<<8 | Robot.Vxl ; //MSB of check_sum won't be sent
+	//in even cases micro puts data on F0 to F6 and clear data_clk pin (F7) to 0 ,so micro puts '0'+'data' on port F
+	//so there is no need for "CLK_PORT.OUTCLR = CLK_PIN ;"
+	send_packet[0]  = 0b01010101 ;	//first start sign
+	send_packet[2]  = 0b01010101 ;	//second start sign
+	send_packet[4]  = Robot.Vxh    & 0b01111111 ;
+	send_packet[6]  = Robot.Vyh    & 0b01111111 ;
+	send_packet[8]  = Robot.Wh     & 0b01111111 ;
+	send_packet[10] = Robot.GVxh   & 0b01111111 ;
+	send_packet[12] = Robot.GVyh   & 0b01111111 ;
+	send_packet[14] = Robot.GWh    & 0b01111111 ;
+	send_packet[16] = Robot.alphah & 0b01111111 ;
+	send_packet[18] = ( (Robot.Vxh       & 0x80 >> 7) |
+					    (Robot.Vyh       & 0x80 >> 6) | 
+						(Robot.Wh        & 0x80 >> 5) | 
+						(Robot.GVxh      & 0x80 >> 4) | 
+						(Robot.GVyh      & 0x80 >> 3) | 
+						(Robot.GWh       & 0x80 >> 2) | 
+						(Robot.alphah    & 0x80 >> 1) ) & 0b01111111;
+	send_packet[20] = check_sum0 & 0b01111111 ;
+	
+	send_packet[22] = Robot.Vxl    & 0b01111111 ;
+	send_packet[24] = Robot.Vyl    & 0b01111111 ;
+	send_packet[26] = Robot.Wl     & 0b01111111 ;
+	send_packet[28] = Robot.GVxl   & 0b01111111 ;
+	send_packet[30] = Robot.GVyl   & 0b01111111 ;
+	send_packet[32] = Robot.GWl    & 0b01111111 ;
+	send_packet[34] = Robot.alphal & 0b01111111 ;
+	send_packet[36] = ( (Robot.Vxl       & 0x80 >> 7) |
+				        (Robot.Vyl       & 0x80 >> 6) |
+				        (Robot.Wl        & 0x80 >> 5) |
+				        (Robot.GVxl      & 0x80 >> 4) |
+				        (Robot.GVyl      & 0x80 >> 3) |
+				        (Robot.GWl       & 0x80 >> 2) |
+				        (Robot.alphal    & 0x80 >> 1) ) & 0b01111111;
+	send_packet[38] = check_sum1 & 0b01111111 ;
 
-	send_packet [ 1 ] = 0xAAAAAAAAAAAAAAAA;check_sum1<<56 | Robot.alphah<<48 |Robot.JWh<<40
-	| Robot.JWl<<32 | Robot.JVyh<<24 | Robot.JVyl<<16
-	| Robot.JVxh<<8 | Robot.JVxl ; //MSB of check_sum won't be sent
 }
 
 
 void fpga_connection ( void )
 {
-	int j = 0 ;
-	if (packet_counter > 21) j = 1 ; //4 start packets + 18 of first array  >> 4 + 18 = 22 >> 0 to 21 >> second array starts from 22 to 39
-	
-	if (packet_counter < 4)
+	if (packet_counter % 2 == 0)
 	{
-		if ( d_counter == even)
-		{
-			PORTF.OUT = ( PORTF.IN & 0x80 ) |  0b1010101 ;
-			CLK_PORT.OUTCLR = CLK_PIN ;
-		}
-		else
-		{
-			CLK_PORT.OUTSET = CLK_PIN ;
-		}
-	}
+		PORTF_OUT = send_packet[packet_counter] ;
+	} 
 	else
 	{
-		if ( d_counter == even )
-		{
-			PORTF.OUT = ( PORTF.IN & 0x80 ) | ( send_packet [ j ] & 0x0000007F ) ;
-			send_packet [ j ] = send_packet [ j ] >> 7 ;
-			CLK_PORT.OUTCLR = CLK_PIN ;
-		}
-		else
-		{
-			receive_packet [j] = receive_packet [j] << 7 ;
-			receive_packet [j] = PORTX_IN | receive_packet [j] ;
-			CLK_PORT.OUTSET = CLK_PIN ;
-		}
+		CLK_PORT.OUTSET = CLK_PIN ;
+		receive_packet[packet_counter] = PORTX_IN ;
 	}
-	
-	d_counter = ! d_counter;
-	
 
 	
 	if (packet_counter == 39)
@@ -443,25 +433,28 @@ void fpga_connection ( void )
 void data_unpacking (void)
 {
 	//unpacking data from FPGA
-	for (int i =0 ; i ; i < 16 )
-	{
-		if(i<9)
-		{
-			temp_data[i] = receive_packet [0] & 0x000000FF ;
-			receive_packet [0] = receive_packet [0] >> 8 ;
-		}
-		else
-		{
-			temp_data[i] = receive_packet [1] & 0x000000FF ;
-			receive_packet [1] = receive_packet [1] >> 8 ;
-		}
-		
-		
-	}
+	//High bytes
+	temp_data[0]  = ( receive_packet[5]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000001 ) << 7 ) ;
+	temp_data[1]  = ( receive_packet[7]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000010 ) << 6 ) ;
+	temp_data[2]  = ( receive_packet[9]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000100 ) << 5 ) ;
+	temp_data[3]  = ( receive_packet[11] & 0b01111111 ) | ( ( receive_packet[19] & 0b00001000 ) << 4 ) ;
+	temp_data[4]  = ( receive_packet[13] & 0b01111111 ) | ( ( receive_packet[19] & 0b00010000 ) << 3 ) ;
+	temp_data[5]  = ( receive_packet[15] & 0b01111111 ) | ( ( receive_packet[19] & 0b00100000 ) << 2 ) ;
+	temp_data[6]  = ( receive_packet[17] & 0b01111111 ) | ( ( receive_packet[19] & 0b01000000 ) << 1 ) ;
+	temp_data[7]  = ( receive_packet[21] & 0b01111111 ) ;
+	//Low bytes
+	temp_data[8]  = ( receive_packet[23] & 0b01111111 ) | ( ( receive_packet[37] & 0b00000001 ) << 7 ) ;
+	temp_data[9]  = ( receive_packet[25] & 0b01111111 ) | ( ( receive_packet[37] & 0b00000010 ) << 6 ) ;
+	temp_data[10] = ( receive_packet[27] & 0b01111111 ) | ( ( receive_packet[37] & 0b00000100 ) << 5 ) ;
+	temp_data[11] = ( receive_packet[29] & 0b01111111 ) | ( ( receive_packet[37] & 0b00001000 ) << 4 ) ;
+	temp_data[12] = ( receive_packet[31] & 0b01111111 ) | ( ( receive_packet[37] & 0b00010000 ) << 3 ) ;
+	temp_data[13] = ( receive_packet[33] & 0b01111111 ) | ( ( receive_packet[37] & 0b00100000 ) << 2 ) ;
+	temp_data[14] = ( receive_packet[35] & 0b01111111 ) | ( ( receive_packet[37] & 0b01000000 ) << 1 ) ;
+	temp_data[15] = ( receive_packet[39] & 0b01111111 ) ;
 	
 	//generating check_sum
-	uint8_t check_sum_test0 = 0 ;
-	uint8_t check_sum_test1 = 0 ;
+	uint8_t check_sum_test0 ;
+	uint8_t check_sum_test1 ;
 	for (int i = 0 ; i++ ; i < 7)
 	{
 		check_sum_test0 +=  temp_data[i] ;
