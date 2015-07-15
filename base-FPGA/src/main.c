@@ -215,8 +215,12 @@ int main (void)
 		
 		if (data == other_programs)
 		{
-			Robot.Vxh = 0x0d;
-			Robot.Vxl = 0xc37;
+			Robot.Vxh = 0x0d;//3527
+			Robot.Vxl = 0xc7;
+			Robot.Vyh = 0x0b;//2891
+			Robot.Vyl = 0x4b;
+			Robot.Wh = 0x75;//30039
+			Robot.Wl = 0x57;
 			//other_programs
 			//if (!wireless_ok)
 			//{
@@ -346,14 +350,14 @@ void data_transmission (void)
 	Test_Data[4] = summer;
 	
 	
-	Buf_Tx_L[0]  = 0;//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
-	Buf_Tx_L[1]  = PORTX_IN;//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
-	Buf_Tx_L[2]  = temp_data[0];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
-	Buf_Tx_L[3]  = temp_data[8];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
-	Buf_Tx_L[4]  = received_data[0];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
-	Buf_Tx_L[5]  = received_data[8];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
-	Buf_Tx_L[6]  = Robot.Vxh;//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
-	Buf_Tx_L[7]  = Robot.Vxl;//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
+	Buf_Tx_L[0]  = temp_data[0];//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
+	Buf_Tx_L[1]  = temp_data[8];//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
+	Buf_Tx_L[2]  = temp_data[1];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
+	Buf_Tx_L[3]  = temp_data[9];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
+	Buf_Tx_L[4]  = temp_data[2];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
+	Buf_Tx_L[5]  = temp_data[10];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
+	Buf_Tx_L[6]  = temp_data[36];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
+	Buf_Tx_L[7]  = temp_data[38];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
 	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
 	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
 	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
@@ -400,13 +404,13 @@ void data_packing ( void )
 	send_packet[12] = Robot.GVyh   & 0b01111111 ;
 	send_packet[14] = Robot.GWh    & 0b01111111 ;
 	send_packet[16] = Robot.alphah & 0b01111111 ;
-	send_packet[18] = ( (Robot.Vxh       & 0x80 >> 7) |
-					    (Robot.Vyh       & 0x80 >> 6) | 
-						(Robot.Wh        & 0x80 >> 5) | 
-						(Robot.GVxh      & 0x80 >> 4) | 
-						(Robot.GVyh      & 0x80 >> 3) | 
-						(Robot.GWh       & 0x80 >> 2) | 
-						(Robot.alphah    & 0x80 >> 1) ) & 0b01111111;
+	send_packet[18] = ( ((Robot.Vxh       & 0x80) >> 7) |
+					    ((Robot.Vyh       & 0x80) >> 6) | 
+						((Robot.Wh        & 0x80) >> 5) | 
+						((Robot.GVxh      & 0x80) >> 4) | 
+						((Robot.GVyh      & 0x80) >> 3) | 
+						((Robot.GWh       & 0x80) >> 2) | 
+						((Robot.alphah    & 0x80) >> 1) ) & 0b01111111;
 	send_packet[20] = check_sum0 & 0b01111111 ;
 	
 	send_packet[22] = Robot.Vxl    & 0b01111111 ;
@@ -416,13 +420,13 @@ void data_packing ( void )
 	send_packet[30] = Robot.GVyl   & 0b01111111 ;
 	send_packet[32] = Robot.GWl    & 0b01111111 ;
 	send_packet[34] = Robot.alphal & 0b01111111 ;
-	send_packet[36] = ( (Robot.Vxl       & 0x80 >> 7) |
-				        (Robot.Vyl       & 0x80 >> 6) |
-				        (Robot.Wl        & 0x80 >> 5) |
-				        (Robot.GVxl      & 0x80 >> 4) |
-				        (Robot.GVyl      & 0x80 >> 3) |
-				        (Robot.GWl       & 0x80 >> 2) |
-				        (Robot.alphal    & 0x80 >> 1) ) & 0b01111111;
+	send_packet[36] = ( ((Robot.Vxl       & 0x80) >> 7) |
+				        ((Robot.Vyl       & 0x80) >> 6) |
+				        ((Robot.Wl        & 0x80) >> 5) |
+				        ((Robot.GVxl      & 0x80) >> 4) |
+				        ((Robot.GVyl      & 0x80) >> 3) |
+				        ((Robot.GWl       & 0x80) >> 2) |
+				        ((Robot.alphal    & 0x80) >> 1) ) & 0b01111111;
 	send_packet[38] = check_sum1 & 0b01111111 ;
 
 }
@@ -432,7 +436,7 @@ void fpga_connection ( void )
 {
 	if (packet_counter % 2 == 0)//sending
 	{
-		PORTF_OUT = 0b00000001;//test //send_packet[packet_counter] ;
+		PORTF_OUT = send_packet[packet_counter] ;
 	} 
 	else                       //receiving 
 	{
