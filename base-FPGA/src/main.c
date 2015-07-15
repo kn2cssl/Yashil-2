@@ -66,7 +66,7 @@ uint64_t receive_packet [40];
 uint8_t temp_data[20];
 uint8_t received_data[20];
 
-int counter_100ms=0,packet_counter=0,wl_counter=0;
+int counter_100ms=0,packet_counter=0,wl_counter=0,summer=0;
 uint32_t cco=0;
 int rate=0;
 int rate_counter=0;
@@ -195,6 +195,7 @@ int main (void)
 		{
 			data_packing () ;
 			packet_counter = 0 ;
+			summer=0;
 			d_counter = even ;
 			data = communication ;
 		}
@@ -203,6 +204,7 @@ int main (void)
 		{
 			fpga_connection () ;
 			packet_counter++;
+			summer += packet_counter;
 		}
 		
 		if (data == unpacking_data)
@@ -213,10 +215,12 @@ int main (void)
 		
 		if (data == other_programs)
 		{
+			Robot.Vxh = 0x0d;
+			Robot.Vxl = 0xc37;
 			//other_programs
 			//if (!wireless_ok)
 			//{
-				//data = packing_data ;
+				//data = packing_data ;//test
 			//}
 			
 		}
@@ -236,7 +240,6 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	data = new_wireless_data ;
 	
 }
-
 
 
 ISR(TCE1_OVF_vect)//0.1s
@@ -340,17 +343,17 @@ void data_transmission (void)
 	//Test_Data[4] = adc*0.4761;//battery voltage
 	Test_Data[0] = (received_data[0] & 0x00ff) | ((received_data[1] & 0x00ff ) <<8);
 	Test_Data[1] = rate;
-	Test_Data[4] = wl_counter;
+	Test_Data[4] = summer;
 	
 	
 	Buf_Tx_L[0]  = 0;//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
 	Buf_Tx_L[1]  = PORTX_IN;//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
-	Buf_Tx_L[2]  = (Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
-	Buf_Tx_L[3]  = Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
-	Buf_Tx_L[4]  = received_data[5];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
-	Buf_Tx_L[5]  = received_data[4];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
-	Buf_Tx_L[6]  = received_data[7];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
-	Buf_Tx_L[7]  = received_data[6];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
+	Buf_Tx_L[2]  = temp_data[0];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
+	Buf_Tx_L[3]  = temp_data[8];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
+	Buf_Tx_L[4]  = received_data[0];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
+	Buf_Tx_L[5]  = received_data[8];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
+	Buf_Tx_L[6]  = Robot.Vxh;//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
+	Buf_Tx_L[7]  = Robot.Vxl;//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
 	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
 	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
 	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
@@ -427,11 +430,11 @@ void data_packing ( void )
 
 void fpga_connection ( void )
 {
-	if (packet_counter % 2 == 0)
+	if (packet_counter % 2 == 0)//sending
 	{
-		PORTF_OUT = send_packet[packet_counter] ;
+		PORTF_OUT = 0b00000001;//test //send_packet[packet_counter] ;
 	} 
-	else
+	else                       //receiving 
 	{
 		CLK_PORT.OUTSET = CLK_PIN ;
 		receive_packet[packet_counter] = PORTX_IN ;
@@ -477,20 +480,20 @@ void data_unpacking (void)
 	temp_data[15] = ( receive_packet[39] & 0b01111111 ) ;
 	
 	//generating check_sum
-	uint8_t check_sum_test0 = 0 ;
-	uint8_t check_sum_test1 = 0;
+	uint8_t check_sum_testH = 0 ;
+	uint8_t check_sum_testL = 0;
 	for (int i = 0 ; i < 7 ; i++)
 	{
-		check_sum_test0 +=  temp_data[i] ;
+		check_sum_testH +=  temp_data[i] ;
 	}
 	
 	for (int i = 8 ; i < 15 ; i++ )
 	{
-		check_sum_test1 +=  temp_data[i] ;
+		check_sum_testL +=  temp_data[i] ;
 	}
 	
 	//saving checked data
-	if( ( (check_sum_test0 & 0x7F) == temp_data[7] ) && ( (check_sum_test1 & 0x7F) == temp_data[15] ))
+	if( ( (check_sum_testH & 0x7F) == temp_data[7] ) && ( (check_sum_testL & 0x7F) == temp_data[15] ))
 	{
 		for (int i = 0 ; i < 16 ; i++)
 		{
