@@ -350,14 +350,14 @@ void data_transmission (void)
 	Test_Data[4] = summer;
 	
 	
-	Buf_Tx_L[0]  = temp_data[0];//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
-	Buf_Tx_L[1]  = temp_data[8];//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
-	Buf_Tx_L[2]  = temp_data[1];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
-	Buf_Tx_L[3]  = temp_data[9];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
-	Buf_Tx_L[4]  = temp_data[2];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
-	Buf_Tx_L[5]  = temp_data[10];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
-	Buf_Tx_L[6]  = temp_data[36];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
-	Buf_Tx_L[7]  = temp_data[38];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
+	Buf_Tx_L[0]  = received_data[0];//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
+	Buf_Tx_L[1]  = received_data[8];//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
+	Buf_Tx_L[2]  = received_data[1];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
+	Buf_Tx_L[3]  = received_data[9];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
+	Buf_Tx_L[4]  = received_data[2];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
+	Buf_Tx_L[5]  = received_data[10];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
+	Buf_Tx_L[6]  = received_data[36];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
+	Buf_Tx_L[7]  = received_data[38];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
 	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
 	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
 	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
@@ -390,8 +390,8 @@ void data_transmission (void)
 
 void data_packing ( void )
 {
-	uint8_t check_sum0 = Robot.alphah + Robot.GWh + Robot.GVyh + Robot.GVxh + Robot.Wh + Robot.Vyh + Robot.Vxh ;
-	uint8_t check_sum1 = Robot.alphal + Robot.GWl + Robot.GVyl + Robot.GVxl + Robot.Wl + Robot.Vyl + Robot.Vxl ;
+	uint16_t check_sum0 = Robot.alphah + Robot.GWh + Robot.GVyh + Robot.GVxh + Robot.Wh + Robot.Vyh + Robot.Vxh ;
+	uint16_t check_sum1 = Robot.alphal + Robot.GWl + Robot.GVyl + Robot.GVxl + Robot.Wl + Robot.Vyl + Robot.Vxl ;
 	
 	//in even cases micro puts data on F0 to F6 and clear data_clk pin (F7) to 0 ,so micro puts '0'+'data' on port F
 	//so there is no need for "CLK_PORT.OUTCLR = CLK_PIN ;"
@@ -484,8 +484,8 @@ void data_unpacking (void)
 	temp_data[15] = ( receive_packet[39] & 0b01111111 ) ;
 	
 	//generating check_sum
-	uint8_t check_sum_testH = 0 ;
-	uint8_t check_sum_testL = 0;
+	uint16_t check_sum_testH = 0 ;
+	uint16_t check_sum_testL = 0;
 	for (int i = 0 ; i < 7 ; i++)
 	{
 		check_sum_testH +=  temp_data[i] ;
