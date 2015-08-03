@@ -6,7 +6,7 @@
 */
 
 #include <asf.h>
-#define F_CPU 32000000UL
+#define  F_CPU 32000000UL
 #include <util/delay.h>
 #include "initialize.h"
 #include "nrf24l01_L.h"
@@ -66,7 +66,8 @@ uint64_t receive_packet [40];
 uint8_t temp_data[20];
 uint8_t received_data[20];
 
-int counter_100ms=0,packet_counter=0,wl_counter=0,summer=0;
+int counter_100ms=0,packet_counter=0,wl_counter=0,summer=0,counter_1s=0;
+int wireless_time_out = 0; 
 uint32_t cco=0;
 int rate=0;
 int rate_counter=0;
@@ -173,11 +174,19 @@ int main (void)
 	while(1)
 	{
 		
+		if (wireless_time_out > 3000)
+		{
+			NRF_init () ;
+			wireless_time_out = 0 ;
+		}
+		wireless_time_out ++ ;
+		
 		//================================================WIRELESS DATA
 		if (data == new_wireless_data)
 		{
 			wireless_connection();
 			data = packing_data ;
+			wireless_time_out = 0 ;
 			wl_counter ++;
 		}
 		_delay_us(1);
@@ -215,8 +224,8 @@ int main (void)
 		
 		if (data == other_programs)
 		{
-			Robot.Vxh = 0x0d;//3527
-			Robot.Vxl = 0xc7;
+			Robot.Vxh = (Test_Data[0]>> 8) & 0xFF;//3527
+			Robot.Vxl = Test_Data[0] & 0xFF;
 			Robot.Vyh = 0x0b;//2891
 			Robot.Vyl = 0x4b;
 			Robot.Wh = 0x75;//30039
@@ -248,14 +257,16 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 
 ISR(TCE1_OVF_vect)//0.1s
 {
-	//counter_100ms++;
-	//if (counter_100ms==100)
-	//{
+	counter_100ms++;
+	if (counter_100ms==1)
+	{
 		//tc_disable(&TCE1);
 		//rate = rate_counter;
 		//wireless_ok=true;
 		//NRF_init () ;
-	//}
+		counter_1s ++;
+		counter_100ms=0;
+	}
 }
 
 
@@ -345,21 +356,23 @@ void data_transmission (void)
 	//transmitting data to wireless board/////////////////////////////////////////////////
 
 	//Test_Data[4] = adc*0.4761;//battery voltage
-	Test_Data[0] = (received_data[0] & 0x00ff) | ((received_data[1] & 0x00ff ) <<8);
+	Test_Data[0] = /*200*sin((float)counter_1s/50.0)+*/500;counter_1s;
 	Test_Data[1] = rate;
-	Test_Data[4] = summer;
+	Test_Data[4] = wireless_time_out;summer;
 	
 	
 	Buf_Tx_L[0]  = received_data[0];//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
 	Buf_Tx_L[1]  = received_data[8];//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
-	Buf_Tx_L[2]  = received_data[1];//(Test_Data[1]>> 8) & 0xFF;//Robot_D.M1a;//	//drive test data
-	Buf_Tx_L[3]  = received_data[9];//Test_Data[1] & 0xFF;	//Robot_D.M1b;//		//drive test data
+	Buf_Tx_L[2]  = (Test_Data[0]>> 8) & 0xFF;//received_data[1];//Robot_D.M1a;//	//drive test data
+	Buf_Tx_L[3]  = Test_Data[0] & 0xFF;//received_data[9];//Robot_D.M1b;//		//drive test data
 	Buf_Tx_L[4]  = received_data[2];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
 	Buf_Tx_L[5]  = received_data[10];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
-	Buf_Tx_L[6]  = received_data[36];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
-	Buf_Tx_L[7]  = received_data[38];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
-	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	// unused
-	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			// unused
+	Buf_Tx_L[6]  = received_data[3];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
+	Buf_Tx_L[7]  = received_data[11];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
+	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	
+	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			
+	
+	
 	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
 	Buf_Tx_L[11] = Test_Data[5] & 0xFF;			// unused
 	Buf_Tx_L[12] = (Test_Data[6]>> 8) & 0xFF;	// unused
