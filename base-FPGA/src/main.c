@@ -30,8 +30,6 @@ void data_unpacking ( void ) ;
 enum Data_Flow {new_wireless_data , new_jyro_data , packing_data , communication , unpacking_data , other_programs };
 enum Data_Flow data;
 
-enum data_counter {even=0 , odd=1};
-enum data_counter d_counter;
 
 struct Robot_Data
 {
@@ -66,7 +64,7 @@ uint64_t receive_packet [40];
 uint8_t temp_data[20];
 uint8_t received_data[20];
 
-int counter_100ms=0,packet_counter=0,wl_counter=0,summer=0,counter_1s=0;
+int counter_100ms=0,packet_counter=0,summer=0,counter_1s=0;
 int wireless_time_out = 0; 
 uint32_t cco=0;
 int rate=0;
@@ -187,7 +185,6 @@ int main (void)
 			wireless_connection();
 			data = packing_data ;
 			wireless_time_out = 0 ;
-			wl_counter ++;
 		}
 		_delay_us(1);
 		//-------------------------------------------------------------
@@ -205,7 +202,6 @@ int main (void)
 			data_packing () ;
 			packet_counter = 0 ;
 			summer=0;
-			d_counter = even ;
 			data = communication ;
 		}
 		
@@ -356,7 +352,7 @@ void data_transmission (void)
 	//transmitting data to wireless board/////////////////////////////////////////////////
 
 	//Test_Data[4] = adc*0.4761;//battery voltage
-	Test_Data[0] = /*200*sin((float)counter_1s/50.0)+*/500;counter_1s;
+	Test_Data[0] = 200*sin((float)counter_1s/50.0)+500;counter_1s;
 	Test_Data[1] = rate;
 	Test_Data[4] = wireless_time_out;summer;
 	
@@ -403,13 +399,15 @@ void data_transmission (void)
 
 void data_packing ( void )
 {
-	uint16_t check_sum0 = Robot.alphah + Robot.GWh + Robot.GVyh + Robot.GVxh + Robot.Wh + Robot.Vyh + Robot.Vxh ;
-	uint16_t check_sum1 = Robot.alphal + Robot.GWl + Robot.GVyl + Robot.GVxl + Robot.Wl + Robot.Vyl + Robot.Vxl ;
+	uint16_t check_sumH = 0 ;//= Robot.alphah + Robot.GWh + Robot.GVyh + Robot.GVxh + Robot.Wh + Robot.Vyh + Robot.Vxh ;
+	uint16_t check_sumL = 0 ;//= Robot.alphal + Robot.GWl + Robot.GVyl + Robot.GVxl + Robot.Wl + Robot.Vyl + Robot.Vxl ;
 	
 	//in even cases micro puts data on F0 to F6 and clear data_clk pin (F7) to 0 ,so micro puts '0'+'data' on port F
 	//so there is no need for "CLK_PORT.OUTCLR = CLK_PIN ;"
 	send_packet[0]  = 0b01010101 ;	//first start sign
 	send_packet[2]  = 0b01010101 ;	//second start sign
+	
+	
 	send_packet[4]  = Robot.Vxh    & 0b01111111 ;
 	send_packet[6]  = Robot.Vyh    & 0b01111111 ;
 	send_packet[8]  = Robot.Wh     & 0b01111111 ;
@@ -424,7 +422,11 @@ void data_packing ( void )
 						((Robot.GVyh      & 0x80) >> 3) | 
 						((Robot.GWh       & 0x80) >> 2) | 
 						((Robot.alphah    & 0x80) >> 1) ) & 0b01111111;
-	send_packet[20] = check_sum0 & 0b01111111 ;
+	for (i=2;i<10;i++)
+	{
+		check_sumH += send_packet[2*i] ;
+	}
+	send_packet[20] = check_sumH & 0b01111111 ;
 	
 	send_packet[22] = Robot.Vxl    & 0b01111111 ;
 	send_packet[24] = Robot.Vyl    & 0b01111111 ;
@@ -440,8 +442,11 @@ void data_packing ( void )
 				        ((Robot.GVyl      & 0x80) >> 3) |
 				        ((Robot.GWl       & 0x80) >> 2) |
 				        ((Robot.alphal    & 0x80) >> 1) ) & 0b01111111;
-	send_packet[38] = check_sum1 & 0b01111111 ;
-
+	for (i=11;i<19;i++)
+	{
+		check_sumL += send_packet[2*i] ;
+	}
+	send_packet[38] = check_sumL & 0b01111111 ;
 }
 
 
@@ -469,8 +474,6 @@ void fpga_connection ( void )
 				}
 		data = unpacking_data ;
 	}
-
-
 }
 
 
@@ -499,14 +502,14 @@ void data_unpacking (void)
 	//generating check_sum
 	uint16_t check_sum_testH = 0 ;
 	uint16_t check_sum_testL = 0;
-	for (int i = 0 ; i < 7 ; i++)
+	for (int i = 0 ; i < 8 ; i++)
 	{
-		check_sum_testH +=  temp_data[i] ;
+		check_sum_testH +=  receive_packet[2*i+5] ;
 	}
 	
-	for (int i = 8 ; i < 15 ; i++ )
+	for (int i = 8 ; i < 16 ; i++ )
 	{
-		check_sum_testL +=  temp_data[i] ;
+		check_sum_testL +=  receive_packet[2*i+7] ;
 	}
 	
 	//saving checked data
