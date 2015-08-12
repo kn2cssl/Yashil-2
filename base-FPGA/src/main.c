@@ -175,6 +175,7 @@ int main (void)
 		if (wireless_time_out > 3000)
 		{
 			NRF_init () ;
+			free_wheel = 1 ;
 			wireless_time_out = 0 ;
 		}
 		wireless_time_out ++ ;
@@ -220,12 +221,23 @@ int main (void)
 		
 		if (data == other_programs)
 		{
-			Robot.Vxh = (Test_Data[0]>> 8) & 0xFF;//3527
-			Robot.Vxl = Test_Data[0] & 0xFF;
-			Robot.Vyh = 0x0b;//2891
-			Robot.Vyl = 0x4b;
-			Robot.Wh = 0x75;//30039
-			Robot.Wl = 0x57;
+			
+			if (free_wheel)
+			{
+				Robot.Vxh  = 1;
+				Robot.Vxl  = 2;
+				Robot.Vyh  = 3;
+				Robot.Vyl  = 4;
+			}
+			//Test_Data[5] = 500 ;
+			//Robot.Vxh  = (Test_Data[0]>> 8) & 0xFF;//3527
+			//Robot.Vxl  = Test_Data[0] & 0xFF;
+			//Robot.Vyh  = (400>> 8) & 0xFF;//3527
+			//Robot.Vyl  = 400 & 0xFF;
+			//Robot.GVxh = (300>> 8) & 0xFF;//3527
+			//Robot.GVxl = 300 & 0xFF;
+			//Robot.GVyh = (200>> 8) & 0xFF;//3527
+			//Robot.GVyl = 200 & 0xFF;
 			//other_programs
 			//if (!wireless_ok)
 			//{
@@ -280,18 +292,32 @@ void wireless_connection ( void )
 		if((Buf_Rx_L[0] == 0x0A && (RobotID < 3 || (RobotID<9 && RobotID>5)))|| (Buf_Rx_L[0] == 0xA0 && (RobotID > 8 || (RobotID<6 &&      RobotID>2))))
 		{
 			LED_Red_PORT.OUTSET = LED_Red_PIN_bm;
+			//Robot_D.RID  = Buf_Rx_L[0];
+			//Robot_D.M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
+			//Robot_D.M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
+			//Robot_D.M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
+			//Robot_D.M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
+			//Robot_D.M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
+			//Robot_D.M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
+			//Robot_D.M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
+			//Robot_D.M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
+			//Robot_D.KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
+			//Robot_D.CHP  = Buf_Rx_L[10+RobotID%3 * 10];
+			//Robot_D.ASK  = Buf_Rx_L[31];//0b00000000
+			
 			Robot_D.RID  = Buf_Rx_L[0];
-			Robot_D.M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
-			Robot_D.M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
-			Robot_D.M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
-			Robot_D.M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
-			Robot_D.M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
-			Robot_D.M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
-			Robot_D.M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
-			Robot_D.M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
+			Robot.Vxh  = Buf_Rx_L[1+ RobotID%3 * 10];
+			Robot.Vxl  = Buf_Rx_L[2+ RobotID%3 * 10];
+			Robot.Vyh  = Buf_Rx_L[3+ RobotID%3 * 10];
+			Robot.Vyl  = Buf_Rx_L[4+ RobotID%3 * 10];
+			Robot.GVxh  = Buf_Rx_L[5+ RobotID%3 * 10];
+			Robot.GVxl  = Buf_Rx_L[6+ RobotID%3 * 10];
+			Robot.GVyh  = Buf_Rx_L[7+ RobotID%3 * 10];
+			Robot.GVyl  = Buf_Rx_L[8+ RobotID%3 * 10];
 			Robot_D.KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
 			Robot_D.CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			Robot_D.ASK  = Buf_Rx_L[31];//0b00000000
+			
 			
 			if (Robot_D.ASK != Robot_Select)
 			{
@@ -352,19 +378,17 @@ void data_transmission (void)
 	//transmitting data to wireless board/////////////////////////////////////////////////
 
 	//Test_Data[4] = adc*0.4761;//battery voltage
-	Test_Data[0] = 200*sin((float)counter_1s/50.0)+500;counter_1s;
+	//Test_Data[0] = 200*sin((float)counter_1s/50.0)+800;counter_1s;
 	Test_Data[1] = rate;
-	Test_Data[4] = wireless_time_out;summer;
+	Test_Data[4] = wireless_time_out;//summer;
 	
 	
-	Buf_Tx_L[0]  = received_data[0];//(Test_Data[0]>> 8) & 0xFF;//Robot_D.M0a;//	//drive test data
+	Buf_Tx_L[0]  = received_data[0];//(Test_Data[0]>> 8) & 0xFF;////Robot_D.M0a;//	//drive test data
 	Buf_Tx_L[1]  = received_data[8];//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
-	Buf_Tx_L[2]  = (Test_Data[0]>> 8) & 0xFF;//received_data[1];//Robot_D.M1a;//	//drive test data
-	Buf_Tx_L[3]  = Test_Data[0] & 0xFF;//received_data[9];//Robot_D.M1b;//		//drive test data
-	Buf_Tx_L[4]  = received_data[2];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
-	Buf_Tx_L[5]  = received_data[10];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
-	Buf_Tx_L[6]  = received_data[3];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
-	Buf_Tx_L[7]  = received_data[11];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
+	Buf_Tx_L[4]  = received_data[5];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
+	Buf_Tx_L[5]  = received_data[13];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
+	Buf_Tx_L[6]  = received_data[6];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
+	Buf_Tx_L[7]  = received_data[14];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
 	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	
 	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			
 	
@@ -474,6 +498,10 @@ void fpga_connection ( void )
 				}
 		data = unpacking_data ;
 	}
+
+	
+	//is it needed really ??
+	_delay_us(5);
 }
 
 
