@@ -267,15 +267,7 @@ int main (void)
 		
 		if (data == other_programs)
 		{
-			
-			if (free_wheel)
-			{
-				Robot.W0_sp.byte[high]		= 1;
-				Robot.W0_sp.byte[low ]		= 2;
-				Robot.W1_sp.byte[high]		= 3;
-				Robot.W1_sp.byte[low ]		= 4;
-			}
-			
+			free_wheel_function () ;			
 		}
 		
 	}
@@ -415,14 +407,14 @@ void data_transmission (void)
 	Test_Data[4] = wireless_time_out;//summer;
 	
 	
-	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//received_data[0];////Robot_D.M0a;//	//drive test data
-	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;//received_data[8];//Robot_D.M0b;//			//drive test data
-	Buf_Tx_L[4]  = received_data[5];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
-	Buf_Tx_L[5]  = received_data[13];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
-	Buf_Tx_L[6]  = received_data[6];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
-	Buf_Tx_L[7]  = received_data[14];//Test_Data[3] & 0xFF;//Robot_D.M3b;//			//drive test data
-	Buf_Tx_L[8]  = (Test_Data[4]>> 8) & 0xFF;	
-	Buf_Tx_L[9]  = Test_Data[4] & 0xFF;			
+	Buf_Tx_L[0]  = Robot.W0.byte[high];
+	Buf_Tx_L[1]  = Robot.W0.byte[low];
+	Buf_Tx_L[2]  = Robot.W1.byte[high];
+	Buf_Tx_L[3]  = Robot.W1.byte[low];
+	Buf_Tx_L[4]  = Robot.W2.byte[high];
+	Buf_Tx_L[5]  = Robot.W2.byte[low];
+	Buf_Tx_L[6]  = (Test_Data[4]>> 8) & 0xFF;	
+	Buf_Tx_L[7]  = Test_Data[4] & 0xFF;			
 	
 	
 	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
@@ -537,8 +529,8 @@ void fpga_connection ( void )
 	}
 
 	
-	//is it needed really ??
-	_delay_us(5);
+	////is it needed really ??
+	//_delay_us(5);
 }
 
 
@@ -585,6 +577,17 @@ void data_unpacking (void)
 }
 
 
-void free_wheel_function ( void )
+inline void free_wheel_function ( void )
 {
+	if (free_wheel)
+	{
+		Robot.W0_sp.byte[high]		= 1;
+		Robot.W0_sp.byte[low ]		= 2;
+		Robot.W1_sp.byte[high]		= 3;
+		Robot.W1_sp.byte[low ]		= 4;
+		Robot.W2_sp.byte[high]		= 0;
+		Robot.W2_sp.byte[low ]		= 0;
+		Robot.W3_sp.byte[high]		= 0;
+		Robot.W3_sp.byte[low ]		= 0;
+	}
 }
