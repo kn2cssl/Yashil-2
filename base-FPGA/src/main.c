@@ -12,6 +12,26 @@
 #include "nrf24l01_L.h"
 #include <stdlib.h>
 
+#define high 1
+#define	low	 0	
+// sp ~ setpoint |	rl ~ real
+// al ~ alpha	|	sb ~ spin back
+// ki ~ kick		|	cd ~ controlling
+// 0r ~ order	
+// #define	VX_SP	0
+// #define	VY_SP	1
+// #define	WR_SP	2
+// #define	VX_RL	3
+// #define	VY_RL	4
+// #define	WR_RL	5
+// #define	AL_RL	6
+// #define	SB_SP	7
+// #define KI_SP	8
+// #define CD_OR	9
+// 
+// #define shoot	0
+// #define chip	1
+
 
 void NRF_init ( void ) ;
 void data_transmission ( void ) ;
@@ -20,6 +40,7 @@ void fpga_connection ( void ) ;
 void wireless_connection ( void ) ;
 void data_packing ( void ) ;
 void data_unpacking ( void ) ;
+void free_wheel_function ( void ) ;
 
 
 //================================
@@ -30,19 +51,21 @@ void data_unpacking ( void ) ;
 enum Data_Flow {new_wireless_data , new_jyro_data , packing_data , communication , unpacking_data , other_programs };
 enum Data_Flow data;
 
+typedef union High_Low{
+	uint8_t byte[2] ;
+	int16_t full ;
+	} HL;
 
 struct Robot_Data
 {
+	
+	//HL wireless[10] ;
 	//wireless data
 	uint8_t RID;
-	uint8_t Vxh;
-	uint8_t Vxl;
-	uint8_t Vyh;
-	uint8_t Vyl;
-	uint8_t Wh;
-	uint8_t Wl;
-	uint8_t alphah;
-	uint8_t alphal;
+	HL Vx_sp ;
+	HL Vy_sp ;
+	HL Wr_sp ;
+	HL alpha ;
 	uint8_t KCK;
 	uint8_t CHP;
 	uint8_t ASK;
@@ -56,12 +79,34 @@ struct Robot_Data
 	uint8_t GWh;
 	uint8_t GWl;
 	
+	//wheels speed setpoint
+	
+	HL W0_sp	;
+	HL W1_sp	;
+	HL W2_sp	;
+	HL W3_sp	;
+	
+	//wheels speed setpoint
+	
+	HL W0	;
+	HL W1	;
+	HL W2	;
+	HL W3	;	
+	
+	//spin back speed setpoint
+	
+	HL SB_sp	;
+	
+	//spin back speed
+	
+	HL SB	;
+	
 }Robot;
 
 uint64_t send_packet[40];
 uint64_t receive_packet [40];
 
-uint8_t temp_data[20];
+HL temp_data[10];
 uint8_t received_data[20];
 
 int counter_100ms=0,packet_counter=0,summer=0,counter_1s=0;
@@ -171,12 +216,13 @@ int main (void)
 	
 	while(1)
 	{
-		
+
 		if (wireless_time_out > 3000)
 		{
 			NRF_init () ;
 			free_wheel = 1 ;
 			wireless_time_out = 0 ;
+			data = packing_data ;//for sending free wheel order to fpga
 		}
 		wireless_time_out ++ ;
 		
@@ -224,25 +270,11 @@ int main (void)
 			
 			if (free_wheel)
 			{
-				Robot.Vxh  = 1;
-				Robot.Vxl  = 2;
-				Robot.Vyh  = 3;
-				Robot.Vyl  = 4;
+				Robot.W0_sp.byte[high]		= 1;
+				Robot.W0_sp.byte[low ]		= 2;
+				Robot.W1_sp.byte[high]		= 3;
+				Robot.W1_sp.byte[low ]		= 4;
 			}
-			//Test_Data[5] = 500 ;
-			//Robot.Vxh  = (Test_Data[0]>> 8) & 0xFF;//3527
-			//Robot.Vxl  = Test_Data[0] & 0xFF;
-			//Robot.Vyh  = (400>> 8) & 0xFF;//3527
-			//Robot.Vyl  = 400 & 0xFF;
-			//Robot.GVxh = (300>> 8) & 0xFF;//3527
-			//Robot.GVxl = 300 & 0xFF;
-			//Robot.GVyh = (200>> 8) & 0xFF;//3527
-			//Robot.GVyl = 200 & 0xFF;
-			//other_programs
-			//if (!wireless_ok)
-			//{
-				//data = packing_data ;//test
-			//}
 			
 		}
 		
@@ -306,10 +338,10 @@ void wireless_connection ( void )
 			//Robot_D.ASK  = Buf_Rx_L[31];//0b00000000
 			
 			Robot_D.RID  = Buf_Rx_L[0];
-			Robot.Vxh  = Buf_Rx_L[1+ RobotID%3 * 10];
-			Robot.Vxl  = Buf_Rx_L[2+ RobotID%3 * 10];
-			Robot.Vyh  = Buf_Rx_L[3+ RobotID%3 * 10];
-			Robot.Vyl  = Buf_Rx_L[4+ RobotID%3 * 10];
+			Robot.Vx_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
+			Robot.Vx_sp.byte[low]  = Buf_Rx_L[2+ RobotID%3 * 10];
+			Robot.Vy_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
+			Robot.Vy_sp.byte[low]  = Buf_Rx_L[4+ RobotID%3 * 10];
 			Robot.GVxh  = Buf_Rx_L[5+ RobotID%3 * 10];
 			Robot.GVxl  = Buf_Rx_L[6+ RobotID%3 * 10];
 			Robot.GVyh  = Buf_Rx_L[7+ RobotID%3 * 10];
@@ -378,13 +410,13 @@ void data_transmission (void)
 	//transmitting data to wireless board/////////////////////////////////////////////////
 
 	//Test_Data[4] = adc*0.4761;//battery voltage
-	//Test_Data[0] = 200*sin((float)counter_1s/50.0)+800;counter_1s;
+	Test_Data[0] = Robot.W1_sp.full;//*sin((float)counter_1s/50.0)+800;counter_1s;
 	Test_Data[1] = rate;
 	Test_Data[4] = wireless_time_out;//summer;
 	
 	
-	Buf_Tx_L[0]  = received_data[0];//(Test_Data[0]>> 8) & 0xFF;////Robot_D.M0a;//	//drive test data
-	Buf_Tx_L[1]  = received_data[8];//Test_Data[0] & 0xFF;//Robot_D.M0b;//			//drive test data
+	Buf_Tx_L[0]  = (Test_Data[0]>> 8) & 0xFF;//received_data[0];////Robot_D.M0a;//	//drive test data
+	Buf_Tx_L[1]  = Test_Data[0] & 0xFF;//received_data[8];//Robot_D.M0b;//			//drive test data
 	Buf_Tx_L[4]  = received_data[5];//(Test_Data[2]>> 8) & 0xFF;//Robot_D.M2a;//	//drive test data
 	Buf_Tx_L[5]  = received_data[13];//Test_Data[2] & 0xFF;//Robot_D.M2b;//			//drive test data
 	Buf_Tx_L[6]  = received_data[6];//(Test_Data[3]>> 8) & 0xFF;//Robot_D.M3a;//	//drive test data
@@ -423,54 +455,59 @@ void data_transmission (void)
 
 void data_packing ( void )
 {
-	uint16_t check_sumH = 0 ;//= Robot.alphah + Robot.GWh + Robot.GVyh + Robot.GVxh + Robot.Wh + Robot.Vyh + Robot.Vxh ;
-	uint16_t check_sumL = 0 ;//= Robot.alphal + Robot.GWl + Robot.GVyl + Robot.GVxl + Robot.Wl + Robot.Vyl + Robot.Vxl ;
+	HL MAKsumA	;
+	HL MAKsumB	;
 	
+	MAKsumA.full = Robot.W0_sp.byte[high] + Robot.W1_sp.byte[high] + Robot.W2_sp.byte[high] + Robot.W3_sp.byte[high] + Robot.SB_sp.byte[high]
+				 + Robot.W0_sp.byte[low ] + Robot.W1_sp.byte[low ] + Robot.W2_sp.byte[low ] + Robot.W3_sp.byte[low ] + Robot.SB_sp.byte[low ]	;
+
+	MAKsumB.full = Robot.W0_sp.byte[high]*10 + Robot.W1_sp.byte[high]*9 + Robot.W2_sp.byte[high]*8 + Robot.W3_sp.byte[high]*7 + Robot.SB_sp.byte[high]*6
+				 + Robot.W0_sp.byte[low ]*5  + Robot.W1_sp.byte[low ]*4 + Robot.W2_sp.byte[low ]*3 + Robot.W3_sp.byte[low ]*2 + Robot.SB_sp.byte[low]	;
 	//in even cases micro puts data on F0 to F6 and clear data_clk pin (F7) to 0 ,so micro puts '0'+'data' on port F
 	//so there is no need for "CLK_PORT.OUTCLR = CLK_PIN ;"
 	send_packet[0]  = 0b01010101 ;	//first start sign
 	send_packet[2]  = 0b01010101 ;	//second start sign
 	
 	
-	send_packet[4]  = Robot.Vxh    & 0b01111111 ;
-	send_packet[6]  = Robot.Vyh    & 0b01111111 ;
-	send_packet[8]  = Robot.Wh     & 0b01111111 ;
-	send_packet[10] = Robot.GVxh   & 0b01111111 ;
-	send_packet[12] = Robot.GVyh   & 0b01111111 ;
-	send_packet[14] = Robot.GWh    & 0b01111111 ;
-	send_packet[16] = Robot.alphah & 0b01111111 ;
-	send_packet[18] = ( ((Robot.Vxh       & 0x80) >> 7) |
-					    ((Robot.Vyh       & 0x80) >> 6) | 
-						((Robot.Wh        & 0x80) >> 5) | 
-						((Robot.GVxh      & 0x80) >> 4) | 
-						((Robot.GVyh      & 0x80) >> 3) | 
-						((Robot.GWh       & 0x80) >> 2) | 
-						((Robot.alphah    & 0x80) >> 1) ) & 0b01111111;
-	for (i=2;i<10;i++)
-	{
-		check_sumH += send_packet[2*i] ;
-	}
-	send_packet[20] = check_sumH & 0b01111111 ;
+	send_packet[4]  = Robot.W0_sp.byte[high]		& 0b01111111 ;
+	send_packet[6]  = Robot.W1_sp.byte[high]		& 0b01111111 ;
+	send_packet[8]  = Robot.W2_sp.byte[high]		& 0b01111111 ;
+	send_packet[10] = Robot.W3_sp.byte[high]		& 0b01111111 ;
+	send_packet[12] = Robot.SB_sp.byte[high]		& 0b01111111 ;
+	send_packet[14] = MAKsumA.byte[high]			& 0b01111111 ;
+	send_packet[16] = MAKsumB.byte[high]			& 0b01111111 ;
+	send_packet[18] = ( ((Robot.W0_sp.byte[high]	& 0x80) >> 7) |
+						((Robot.W1_sp.byte[high]	& 0x80) >> 6) |
+						((Robot.W2_sp.byte[high]	& 0x80) >> 5) |
+						((Robot.W3_sp.byte[high]	& 0x80) >> 4) |
+						((Robot.SB_sp.byte[high]	& 0x80) >> 3) |
+						((MAKsumA.byte[high]		& 0x80) >> 2) |
+						((MAKsumB.byte[high]		& 0x80) >> 1) ) & 0b01111111;
+	//for (i=2;i<10;i++)
+	//{
+		//check_sumH += send_packet[2*i] ;
+	//}
+	//send_packet[20] = check_sumH & 0b01111111 ;
 	
-	send_packet[22] = Robot.Vxl    & 0b01111111 ;
-	send_packet[24] = Robot.Vyl    & 0b01111111 ;
-	send_packet[26] = Robot.Wl     & 0b01111111 ;
-	send_packet[28] = Robot.GVxl   & 0b01111111 ;
-	send_packet[30] = Robot.GVyl   & 0b01111111 ;
-	send_packet[32] = Robot.GWl    & 0b01111111 ;
-	send_packet[34] = Robot.alphal & 0b01111111 ;
-	send_packet[36] = ( ((Robot.Vxl       & 0x80) >> 7) |
-				        ((Robot.Vyl       & 0x80) >> 6) |
-				        ((Robot.Wl        & 0x80) >> 5) |
-				        ((Robot.GVxl      & 0x80) >> 4) |
-				        ((Robot.GVyl      & 0x80) >> 3) |
-				        ((Robot.GWl       & 0x80) >> 2) |
-				        ((Robot.alphal    & 0x80) >> 1) ) & 0b01111111;
-	for (i=11;i<19;i++)
-	{
-		check_sumL += send_packet[2*i] ;
-	}
-	send_packet[38] = check_sumL & 0b01111111 ;
+	send_packet[20] = Robot.W0_sp.byte[low]		& 0b01111111 ;
+	send_packet[22] = Robot.W1_sp.byte[low]		& 0b01111111 ;
+	send_packet[24] = Robot.W2_sp.byte[low]		& 0b01111111 ;
+	send_packet[26] = Robot.W3_sp.byte[low]		& 0b01111111 ;
+	send_packet[28] = Robot.SB_sp.byte[low]		& 0b01111111 ;
+	send_packet[30] = MAKsumA.byte[low]			& 0b01111111 ;
+	send_packet[32] = MAKsumB.byte[low]			& 0b01111111 ;
+	send_packet[34] = ( ((Robot.W0_sp.byte[low]	& 0x80) >> 7) |
+						((Robot.W1_sp.byte[low]	& 0x80) >> 6) |
+						((Robot.W2_sp.byte[low]	& 0x80) >> 5) |
+						((Robot.W3_sp.byte[low]	& 0x80) >> 4) |
+						((Robot.SB_sp.byte[low]	& 0x80) >> 3) |
+						((MAKsumA.byte[low]		& 0x80) >> 2) |
+						((MAKsumB.byte[low]		& 0x80) >> 1) ) & 0b01111111;
+// 	for (i=11;i<19;i++)
+// 	{
+// 		check_sumL += send_packet[2*i] ;
+// 	}
+// 	send_packet[38] = check_sumL & 0b01111111 ;
 }
 
 
@@ -487,7 +524,7 @@ void fpga_connection ( void )
 	}
 
 	
-	if (packet_counter == 39)
+	if (packet_counter == 35)
 	{
 				cco ++ ;
 				if (cco == 1000)
@@ -509,43 +546,45 @@ void data_unpacking (void)
 {
 	//unpacking data from FPGA
 	//High bytes
-	temp_data[0]  = ( receive_packet[5]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000001 ) << 7 ) ;
-	temp_data[1]  = ( receive_packet[7]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000010 ) << 6 ) ;
-	temp_data[2]  = ( receive_packet[9]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000100 ) << 5 ) ;
-	temp_data[3]  = ( receive_packet[11] & 0b01111111 ) | ( ( receive_packet[19] & 0b00001000 ) << 4 ) ;
-	temp_data[4]  = ( receive_packet[13] & 0b01111111 ) | ( ( receive_packet[19] & 0b00010000 ) << 3 ) ;
-	temp_data[5]  = ( receive_packet[15] & 0b01111111 ) | ( ( receive_packet[19] & 0b00100000 ) << 2 ) ;
-	temp_data[6]  = ( receive_packet[17] & 0b01111111 ) | ( ( receive_packet[19] & 0b01000000 ) << 1 ) ;
-	temp_data[7]  = ( receive_packet[21] & 0b01111111 ) ;
+	temp_data[0].byte[high]  = ( receive_packet[5]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000001 ) << 7 ) ;
+	temp_data[1].byte[high]  = ( receive_packet[7]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000010 ) << 6 ) ;
+	temp_data[2].byte[high]  = ( receive_packet[9]  & 0b01111111 ) | ( ( receive_packet[19] & 0b00000100 ) << 5 ) ;
+	temp_data[3].byte[high]  = ( receive_packet[11] & 0b01111111 ) | ( ( receive_packet[19] & 0b00001000 ) << 4 ) ;
+	temp_data[4].byte[high]  = ( receive_packet[13] & 0b01111111 ) | ( ( receive_packet[19] & 0b00010000 ) << 3 ) ;
+	temp_data[5].byte[high]  = ( receive_packet[15] & 0b01111111 ) | ( ( receive_packet[19] & 0b00100000 ) << 2 ) ;
+	temp_data[6].byte[high]  = ( receive_packet[17] & 0b01111111 ) | ( ( receive_packet[19] & 0b01000000 ) << 1 ) ;
+/*	temp_data[7]  = ( receive_packet[21] & 0b01111111 ) ;*/
 	//Low bytes
-	temp_data[8]  = ( receive_packet[23] & 0b01111111 ) | ( ( receive_packet[37] & 0b00000001 ) << 7 ) ;
-	temp_data[9]  = ( receive_packet[25] & 0b01111111 ) | ( ( receive_packet[37] & 0b00000010 ) << 6 ) ;
-	temp_data[10] = ( receive_packet[27] & 0b01111111 ) | ( ( receive_packet[37] & 0b00000100 ) << 5 ) ;
-	temp_data[11] = ( receive_packet[29] & 0b01111111 ) | ( ( receive_packet[37] & 0b00001000 ) << 4 ) ;
-	temp_data[12] = ( receive_packet[31] & 0b01111111 ) | ( ( receive_packet[37] & 0b00010000 ) << 3 ) ;
-	temp_data[13] = ( receive_packet[33] & 0b01111111 ) | ( ( receive_packet[37] & 0b00100000 ) << 2 ) ;
-	temp_data[14] = ( receive_packet[35] & 0b01111111 ) | ( ( receive_packet[37] & 0b01000000 ) << 1 ) ;
-	temp_data[15] = ( receive_packet[39] & 0b01111111 ) ;
+	temp_data[0].byte[low]	 = ( receive_packet[21] & 0b01111111 ) | ( ( receive_packet[35] & 0b00000001 ) << 7 ) ;
+	temp_data[1].byte[low]	 = ( receive_packet[23] & 0b01111111 ) | ( ( receive_packet[35] & 0b00000010 ) << 6 ) ;
+	temp_data[2].byte[low]	 = ( receive_packet[25] & 0b01111111 ) | ( ( receive_packet[35] & 0b00000100 ) << 5 ) ;
+	temp_data[3].byte[low]	 = ( receive_packet[27] & 0b01111111 ) | ( ( receive_packet[35] & 0b00001000 ) << 4 ) ;
+	temp_data[4].byte[low]	 = ( receive_packet[29] & 0b01111111 ) | ( ( receive_packet[35] & 0b00010000 ) << 3 ) ;
+	temp_data[5].byte[low]	 = ( receive_packet[31] & 0b01111111 ) | ( ( receive_packet[35] & 0b00100000 ) << 2 ) ;
+	temp_data[6].byte[low]	 = ( receive_packet[33] & 0b01111111 ) | ( ( receive_packet[35] & 0b01000000 ) << 1 ) ;
+/*	temp_data[15] = ( receive_packet[39] & 0b01111111 ) ;*/
 	
 	//generating check_sum
-	uint16_t check_sum_testH = 0 ;
-	uint16_t check_sum_testL = 0;
-	for (int i = 0 ; i < 8 ; i++)
-	{
-		check_sum_testH +=  receive_packet[2*i+5] ;
-	}
+	uint16_t MAKsumA ;
+	uint16_t MAKsumB;
 	
-	for (int i = 8 ; i < 16 ; i++ )
-	{
-		check_sum_testL +=  receive_packet[2*i+7] ;
-	}
+	MAKsumA = temp_data[0].byte[high] + temp_data[1].byte[high] + temp_data[2].byte[high] + temp_data[3].byte[high] + temp_data[4].byte[high] +
+			  temp_data[0].byte[low ] + temp_data[1].byte[low ] + temp_data[2].byte[low ] + temp_data[3].byte[low ] + temp_data[4].byte[low ]  ;
 	
+	MAKsumB = temp_data[0].byte[high]*10 + temp_data[1].byte[high]*9 + temp_data[2].byte[high]*8 + temp_data[3].byte[high]*7 + temp_data[4].byte[high]*6 +
+	          temp_data[0].byte[low ]*5  + temp_data[1].byte[low ]*4 + temp_data[2].byte[low ]*3 + temp_data[3].byte[low ]*2 + temp_data[4].byte[low ]  ;
 	//saving checked data
-	if( ( (check_sum_testH & 0x7F) == temp_data[7] ) && ( (check_sum_testL & 0x7F) == temp_data[15] ))
+	if( ( MAKsumA = temp_data[5].full ) && ( MAKsumB = temp_data[6].full))
 	{
-		for (int i = 0 ; i < 16 ; i++)
-		{
-			received_data[i] = temp_data[i] ;
-		}
+		Robot.W0.full = temp_data[0].full ;
+		Robot.W1.full = temp_data[1].full ;
+		Robot.W2.full = temp_data[2].full ;
+		Robot.W3.full = temp_data[3].full ;
+		Robot.SB.full = temp_data[4].full ;
 	}
+}
+
+
+void free_wheel_function ( void )
+{
 }
