@@ -34,7 +34,7 @@ void PORT_init(void)
 			
 	PORTD_DIRSET = NRF24L01_L_CE_LINE | NRF24L01_L_CS_LINE | NRF24L01_L_MOSI_LINE | NRF24L01_L_SCK_LINE; //wireless module
 	PORTD_PIN2CTRL=PORT_ISC_BOTHEDGES_gc;//IRQ PIN ?!
-	PORTD_INTCTRL = PORT_INT0LVL_LO_gc;
+	PORTD_INTCTRL = PORT_INT0LVL_HI_gc;
 	PORTD_INT0MASK = PIN2_bm;
 	
 	PORTE_DIRSET = Buzzer_PIN_bm | TX_Data_PIN_bm | LED_Green_PIN_bm | LED_White_PIN_bm | LED_Red_PIN_bm;
@@ -104,16 +104,16 @@ void TimerE1_init(void)
     tc_set_direction(&TCE1,TC_UP);
     tc_enable(&TCE1);
 };
-//#define TIMERE0_PER 0x4C4A
-//void TimerE0_init(void)
-//{
-	//tc_write_clock_source(&TCE0,TC_CLKSEL_DIV1024_gc);
-	//tc_set_wgm(&TCE0,TC_WG_NORMAL);
-	//tc_set_overflow_interrupt_level(&TCE0,TC_INT_LVL_MED);
-	//tc_write_period(&TCE0,TIMERE0_PER);
-	//tc_set_direction(&TCE0,TC_UP);
-	//tc_enable(&TCE0);
-//};
+#define TIMERE0_PER 0x0020
+void TimerE0_init(void)
+{
+	tc_write_clock_source(&TCE0,TC_CLKSEL_DIV1_gc);
+	tc_set_wgm(&TCE0,TC_WG_NORMAL);
+	tc_set_overflow_interrupt_level(&TCE0,TC_INT_LVL_MED);
+	tc_write_period(&TCE0,TIMERE0_PER);
+	tc_set_direction(&TCE0,TC_UP);
+	tc_enable(&TCE0);
+};
 void SPI_Init(void)
 {
 	spi_xmega_set_baud_div(&NRF24L01_L_SPI,8000000UL,F_CPU);
