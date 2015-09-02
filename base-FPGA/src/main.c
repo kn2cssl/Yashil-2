@@ -337,18 +337,18 @@ void wireless_connection ( void )
 			//Robot_D.CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			//Robot_D.ASK  = Buf_Rx_L[31];//0b00000000
 			
-			Robot_D.RID  = Buf_Rx_L[0];
-			Robot.Vx_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
-			Robot.Vx_sp.byte[low]  = Buf_Rx_L[2+ RobotID%3 * 10];
-			Robot.Vy_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
-			Robot.Vy_sp.byte[low]  = Buf_Rx_L[4+ RobotID%3 * 10];
-			Robot.GVxh  = Buf_Rx_L[5+ RobotID%3 * 10];
-			Robot.GVxl  = Buf_Rx_L[6+ RobotID%3 * 10];
-			Robot.GVyh  = Buf_Rx_L[7+ RobotID%3 * 10];
-			Robot.GVyl  = Buf_Rx_L[8+ RobotID%3 * 10];
-			Robot_D.KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
-			Robot_D.CHP  = Buf_Rx_L[10+RobotID%3 * 10];
-			Robot_D.ASK  = Buf_Rx_L[31];//0b00000000
+			Robot_D.RID				= Buf_Rx_L[0];
+			Robot.W0_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
+			Robot.W0_sp.byte[low]	= Buf_Rx_L[2+ RobotID%3 * 10];
+			Robot.W1_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
+			Robot.W1_sp.byte[low]	= Buf_Rx_L[4+ RobotID%3 * 10];
+			Robot.W2_sp.byte[high]  = Buf_Rx_L[5+ RobotID%3 * 10];
+			Robot.W2_sp.byte[low]	= Buf_Rx_L[6+ RobotID%3 * 10];
+			Robot.W3_sp.byte[high]  = Buf_Rx_L[7+ RobotID%3 * 10];
+			Robot.W3_sp.byte[low]	= Buf_Rx_L[8+ RobotID%3 * 10];
+			Robot_D.KCK				= Buf_Rx_L[9+ RobotID%3 * 10];
+			Robot_D.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
+			Robot_D.ASK				= Buf_Rx_L[31];//0b00000000
 			
 			
 			if (Robot_D.ASK != Robot_Select)
@@ -459,7 +459,7 @@ void data_packing ( void )
 	
 	//Robot.W0_sp.full = -895;//test !!!!!!!!!!!!!!!!!!!!!!!!!
 	//Robot.W1_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
-	//Robot.W2_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
+	//Robot.W2_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!! 
 	//Robot.W3_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	MAKsumA.full = Robot.W0_sp.byte[high] + Robot.W1_sp.byte[high] + Robot.W2_sp.byte[high] + Robot.W3_sp.byte[high] + Robot.SB_sp.byte[high]
