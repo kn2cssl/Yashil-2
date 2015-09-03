@@ -111,14 +111,14 @@ uint8_t received_data[20];
 
 int counter_100ms=0,packet_counter=0,summer=0,counter_1s=0;
 int wireless_time_out = 0; 
-HL number_of_sent_packet ={0,0} , number_of_received_packet ;
+HL number_of_sent_packet ={{0,0}} , number_of_received_packet ;
 int rate=0;
 int rate_counter=0;
 int32_t tus = 0 , tusmem = 0 , tusviwe = 0;
 bool wireless_ok=false;
 //================================
 
-unsigned char Buf_Rx_L[_Buffer_Size] ;
+char Buf_Rx_L[_Buffer_Size] ;
 char Buf_Tx_L[_Buffer_Size];
 char Address[_Address_Width] = { 0x11, 0x22, 0x33, 0x44, 0x55};
 int motor_num=0,test=0;
@@ -130,21 +130,6 @@ int wireless_reset=0;
 float adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0,flg_sw=0,SW_TEST_flg=0;
 bool reset_setpoint_flag = true;
-struct wireless_DATA
-{
-	uint8_t RID;
-	signed int M0a;
-	signed int M0b;
-	signed int M1a;
-	signed int M1b;
-	signed int M2a;
-	signed int M2b;
-	signed int M3a;
-	signed int M3b;
-	uint8_t KCK;
-	uint8_t CHP;
-	uint8_t ASK;
-}Robot_D;
 
 
 
@@ -337,7 +322,7 @@ void wireless_connection ( void )
 			//Robot_D.CHP  = Buf_Rx_L[10+RobotID%3 * 10];
 			//Robot_D.ASK  = Buf_Rx_L[31];//0b00000000
 			
-			Robot_D.RID				= Buf_Rx_L[0];
+			Robot.RID				= Buf_Rx_L[0];
 			Robot.W0_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
 			Robot.W0_sp.byte[low]	= Buf_Rx_L[2+ RobotID%3 * 10];
 			Robot.W1_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
@@ -346,14 +331,14 @@ void wireless_connection ( void )
 			Robot.W2_sp.byte[low]	= Buf_Rx_L[6+ RobotID%3 * 10];
 			Robot.W3_sp.byte[high]  = Buf_Rx_L[7+ RobotID%3 * 10];
 			Robot.W3_sp.byte[low]	= Buf_Rx_L[8+ RobotID%3 * 10];
-			Robot_D.KCK				= Buf_Rx_L[9+ RobotID%3 * 10];
-			Robot_D.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
-			Robot_D.ASK				= Buf_Rx_L[31];//0b00000000
+			Robot.KCK				= Buf_Rx_L[9+ RobotID%3 * 10];
+			Robot.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
+			Robot.ASK				= Buf_Rx_L[31];//0b00000000
 			
 			
-			if (Robot_D.ASK != Robot_Select)
+			if (Robot.ASK != Robot_Select)
 			{
-				Robot_Select = Robot_D.ASK;
+				Robot_Select = Robot.ASK;
 				if (Robot_Select == RobotID)
 				{
 					NRF24L01_L_WriteReg(W_REGISTER | EN_AA, 0x01);
@@ -364,7 +349,7 @@ void wireless_connection ( void )
 				}
 			}
 			
-			if (Robot_D.ASK == RobotID)
+			if (Robot.ASK == RobotID)
 			{
 				data_transmission();
 			}
@@ -418,10 +403,10 @@ void data_transmission (void)
 	Buf_Tx_L[1]  = Robot.W0.byte[low];
 	Buf_Tx_L[2]  = Robot.SB.byte[high];
 	Buf_Tx_L[3]  = Robot.SB.byte[low];
-	Buf_Tx_L[4]  = number_of_sent_packet.byte[high] ;Robot.W2.byte[high];
-	Buf_Tx_L[5]  = number_of_sent_packet.byte[low] ;Robot.W2.byte[low];
-	Buf_Tx_L[6]  = number_of_received_packet.byte[high];(Test_Data[4]>> 8) & 0xFF;	
-	Buf_Tx_L[7]  = number_of_received_packet.byte[low];Test_Data[4] & 0xFF;			
+	Buf_Tx_L[4]  = number_of_sent_packet.byte[high] ;//Robot.W2.byte[high];
+	Buf_Tx_L[5]  = number_of_sent_packet.byte[low] ;//Robot.W2.byte[low];
+	Buf_Tx_L[6]  = number_of_received_packet.byte[high];//(Test_Data[4]>> 8) & 0xFF;	
+	Buf_Tx_L[7]  = number_of_received_packet.byte[low];//Test_Data[4] & 0xFF;			
 	
 	
 	Buf_Tx_L[10] = (Test_Data[5]>> 8) & 0xFF;// unused
