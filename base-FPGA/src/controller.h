@@ -49,26 +49,30 @@
 #define kf	0.0001           //        %unknown
 #define ks	0.1              //       %unknown
 #define r	28.5/1000        //         %m
-#define J	0.0192           //         %kg/m2%           >>modeling needed
-#define Jm	92.5/1000/10000  //        %kg/m2
-#define Jw	0.0000233        //        %kg/m2        >>modeling needed
+#define J	0.0192           //         %kg*m2%           >>modeling needed
+#define Jm	92.5/1000/10000  //        %kg*m2								//          0.00000925
+#define Jw	0.0000233        //        %kg*m2        >>modeling needed		//          0.00000642  obtained from SOLIDWORKS's model
 #define d	0.084            //         %m
 #define M	1.5	             //          %kg         >>need measuring
 
 #define b	60/(2*M_PI*r)
 
+
+#define landa 0.99999
+
 void setpoint_generator ( void ) ;
 
 void state_feed_back ( void ) ;
 
+void kalman_observer ( void ) ;
 
+double sign ( double number ) ;
 
 extern double Vx , Vy , Wr ;
 
 extern double x[7][1] , dx[7][1] ,xd[7][1] , du[4][1] , ud[4][1] , u[4][1] ;
 
 extern double Yd[7] ;
-
 
 extern double A [7][7] ;
 
@@ -81,6 +85,10 @@ extern double uFx[4][7] ;
 	
 //k:state feed back	
 extern double k_sf[4][7] ;
+
+extern double battery_voltage ;
+
+extern double max_ocr  ;
 
 
 #endif /* CONTROLLER_H_ */

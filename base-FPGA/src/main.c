@@ -11,6 +11,7 @@
 #include "initialize.h"
 #include "nrf24l01_L.h"
 #include <stdlib.h>
+#include "controller.h"
 
 #define high 1
 #define	low	 0	
@@ -43,11 +44,8 @@ void free_wheel_function ( void ) ;
 
 
 //================================
-//bool new_wireless_data = false ;
-//bool connection_permission = false ;
-//bool packing_pemission = false ;
 
-enum Data_Flow {new_wireless_data , new_jyro_data , packing_data , communication , unpacking_data , other_programs };
+enum Data_Flow {new_wireless_data , new_jyro_data , new_controller_loop , packing_data , communication , unpacking_data , other_programs };
 enum Data_Flow data;
 
 typedef union High_Low{
@@ -216,7 +214,7 @@ int main (void)
 		if (data == new_wireless_data)
 		{
 			wireless_connection();
-			data = packing_data ;
+			data = new_controller_loop ;
 			wireless_time_out = 0 ;
 		}
 		_delay_us(1);
@@ -230,6 +228,18 @@ int main (void)
 		//_delay_us(1);
 		//-------------------------------------------------------------
 
+		if (data == new_controller_loop)
+		{
+			Vx = .5;
+			setpoint_generator() ;
+			state_feed_back() ;
+			Robot.W0_sp.full = u[0][0] /battery_voltage * max_ocr;
+			Robot.W1_sp.full = u[1][0] /battery_voltage * max_ocr;
+			Robot.W2_sp.full = u[2][0] /battery_voltage * max_ocr;
+			Robot.W3_sp.full = u[3][0] /battery_voltage * max_ocr;
+			data = packing_data ;
+		}
+		
 		if (data == packing_data)
 		{
 			tusmem = tus ;
@@ -255,7 +265,7 @@ int main (void)
 		
 		if (data == other_programs)
 		{
-			free_wheel_function () ;			
+			//free_wheel_function () ;			
 		}
 		
 	}
@@ -309,30 +319,18 @@ void wireless_connection ( void )
 		if((Buf_Rx_L[0] == 0x0A && (RobotID < 3 || (RobotID<9 && RobotID>5)))|| (Buf_Rx_L[0] == 0xA0 && (RobotID > 8 || (RobotID<6 &&      RobotID>2))))
 		{
 			LED_Red_PORT.OUTSET = LED_Red_PIN_bm;
-			//Robot_D.RID  = Buf_Rx_L[0];
-			//Robot_D.M0a  = Buf_Rx_L[1+ RobotID%3 * 10];
-			//Robot_D.M0b  = Buf_Rx_L[2+ RobotID%3 * 10];
-			//Robot_D.M1a  = Buf_Rx_L[3+ RobotID%3 * 10];
-			//Robot_D.M1b  = Buf_Rx_L[4+ RobotID%3 * 10];
-			//Robot_D.M2a  = Buf_Rx_L[5+ RobotID%3 * 10];
-			//Robot_D.M2b  = Buf_Rx_L[6+ RobotID%3 * 10];
-			//Robot_D.M3a  = Buf_Rx_L[7+ RobotID%3 * 10];
-			//Robot_D.M3b  = Buf_Rx_L[8+ RobotID%3 * 10];
-			//Robot_D.KCK  = Buf_Rx_L[9+ RobotID%3 * 10];
-			//Robot_D.CHP  = Buf_Rx_L[10+RobotID%3 * 10];
-			//Robot_D.ASK  = Buf_Rx_L[31];//0b00000000
 			
 			Robot.RID				= Buf_Rx_L[0];
-			Robot.W0_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
-			Robot.W0_sp.byte[low]	= Buf_Rx_L[2+ RobotID%3 * 10];
-			Robot.W1_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
-			Robot.W1_sp.byte[low]	= Buf_Rx_L[4+ RobotID%3 * 10];
-			Robot.W2_sp.byte[high]  = Buf_Rx_L[5+ RobotID%3 * 10];
-			Robot.W2_sp.byte[low]	= Buf_Rx_L[6+ RobotID%3 * 10];
-			Robot.W3_sp.byte[high]  = Buf_Rx_L[7+ RobotID%3 * 10];
-			Robot.W3_sp.byte[low]	= Buf_Rx_L[8+ RobotID%3 * 10];
-			Robot.KCK				= Buf_Rx_L[9+ RobotID%3 * 10];
-			Robot.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
+			//Robot.W0_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
+			//Robot.W0_sp.byte[low]	= Buf_Rx_L[2+ RobotID%3 * 10];
+			//Robot.W1_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
+			//Robot.W1_sp.byte[low]	= Buf_Rx_L[4+ RobotID%3 * 10];
+			//Robot.W2_sp.byte[high]  = Buf_Rx_L[5+ RobotID%3 * 10];
+			//Robot.W2_sp.byte[low]	= Buf_Rx_L[6+ RobotID%3 * 10];
+			//Robot.W3_sp.byte[high]  = Buf_Rx_L[7+ RobotID%3 * 10];
+			//Robot.W3_sp.byte[low]	= Buf_Rx_L[8+ RobotID%3 * 10];
+			//Robot.KCK				= Buf_Rx_L[9+ RobotID%3 * 10];
+			//Robot.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
 			Robot.ASK				= Buf_Rx_L[31];//0b00000000
 			
 			
@@ -399,10 +397,16 @@ void data_transmission (void)
 	Test_Data[1] = rate;
 	Test_Data[4] = Robot.SB.full;//Robot.W2.full;tusviwe;//wireless_time_out;//summer;
 	
-	Buf_Tx_L[0]  = Robot.W0.byte[high];
-	Buf_Tx_L[1]  = Robot.W0.byte[low];
-	Buf_Tx_L[2]  = Robot.SB.byte[high];
-	Buf_Tx_L[3]  = Robot.SB.byte[low];
+	//double a = 0.100000004;
+	//Robot.W0.full = a*1000000000.0 ;
+	//Robot.SB.full = sizeof(a) ;
+	HL show[16];
+	show[0].full = xd [0][0];
+	show[1].full = Robot.W0_sp.full;
+	Buf_Tx_L[0]  = show[0].byte[high];//Robot.W0.byte[high];
+	Buf_Tx_L[1]  = show[0].byte[low];//Robot.W0.byte[low];
+	Buf_Tx_L[2]  = show[1].byte[high];//Robot.SB.byte[high];
+	Buf_Tx_L[3]  = show[1].byte[low];//Robot.SB.byte[low];
 	Buf_Tx_L[4]  = number_of_sent_packet.byte[high] ;//Robot.W2.byte[high];
 	Buf_Tx_L[5]  = number_of_sent_packet.byte[low] ;//Robot.W2.byte[low];
 	Buf_Tx_L[6]  = number_of_received_packet.byte[high];//(Test_Data[4]>> 8) & 0xFF;	
@@ -442,7 +446,7 @@ void data_packing ( void )
 	HL MAKsumA	;
 	HL MAKsumB	;
 	
-	//Robot.W0_sp.full = -895;//test !!!!!!!!!!!!!!!!!!!!!!!!!
+	//Robot.W0_sp.full = 4090;//test !!!!!!!!!!!!!!!!!!!!!!!!!
 	//Robot.W1_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
 	//Robot.W2_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!! 
 	//Robot.W3_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
