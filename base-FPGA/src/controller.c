@@ -46,10 +46,11 @@ double C [7][7] =	{	{	1     ,0     ,0     ,0     ,0     ,0     ,0		}	,
 						{	0     ,0     ,0     ,0     ,0     ,0     ,1		}	};
 
 //  -inv(B'*B)*B'*A	= uFx					
-double uFx[4][7] =	{	{   9.8396		,-6.5597	,-0.9334	,0.0467		,0			,0			,0		}	,
-						{	8.3621		,8.3621		,-0.9934	,0			,0.0467		,0			,0		}	,
-						{	-8.3621		,8.3621		,-0.9934    ,0			,0			,0.0467		,0		}	,
-						{	-9.8396		,-6.5597	,-0.9334    ,0			,0			,0			,0.0467	}	}	;
+double uFx[4][7] =	{	{   9.8396		,-6.5597	,-0.9334	,0.046693	,0			,0			,0			}	,
+						{	8.3621		,8.3621		,-0.9936	,0			,0.046693	,0			,0			}	,
+						{	-8.3621		,8.3621		,-0.9936    ,0			,0			,0.046693	,0			}	,
+						{	-9.8396		,-6.5597	,-0.9334    ,0			,0			,0			,0.046693	}	}	;
+							
 	
 //k:state feed back	
 double k_sf[4][7] =   { {	-1.0379		,1.4653		,0.2593		,0.0095		,0.0036		,-0.0001	,0.0036		}	,
@@ -100,7 +101,7 @@ void setpoint_generator ( void )
 	xd[5][0] = (-Vx*sina3+Vy*cosa3+Wr*cosg3*d)*b ;
 	xd[6][0] = (-Vx*sina4+Vy*cosa4+Wr*cosg4*d)*b ;
 	
-	// data checking : data is produced correctly : OK 
+	// data checking 1 : data is produced correctly (checked with model in MATLAB)
 }
 
 void state_feed_back ( void )
@@ -118,6 +119,8 @@ void state_feed_back ( void )
 			}
 		}
 	}
+	
+	// data checking 2 : data is produced correctly (checked with model in MATLAB)
 
 	// 	du=-K*(x-xd);%for simulating controller with unnoisy data
 	// 	%du=-K*(xl-xd);%for simulating controller and observer:(x-xd)|(xh-xd)|(xl-xd)
@@ -127,7 +130,7 @@ void state_feed_back ( void )
 		for (int j = 0 ; j < 1 ; j ++)
 		{
 			
-			dx [i][j] = xd [i][j] - x [i][j] ;  // minus is here <<<<<=
+			//dx [i][j] = xd [i][j] - x [i][j] ;  // minus is here <<<<<=
 
 		}
 	}

@@ -88,7 +88,7 @@ extern double k_sf[4][7] ;
 
 extern double battery_voltage ;
 
-extern double max_ocr  ;
+extern double max_ocr ;
 
 
 #endif /* CONTROLLER_H_ */

@@ -62,6 +62,9 @@ struct Robot_Data
 	HL Vx_sp ;
 	HL Vy_sp ;
 	HL Wr_sp ;
+	HL Vx ;
+	HL Vy ;
+	HL Wr ;
 	HL alpha ;
 	uint8_t KCK;
 	uint8_t CHP;
@@ -230,7 +233,17 @@ int main (void)
 
 		if (data == new_controller_loop)
 		{
-			Vx = .5;
+			Vx = Robot.Vx_sp.full / 1000.0 ;
+			Vy = Robot.Vy_sp.full / 1000.0 ;
+			Wr = Robot.Wr_sp.full / 1000.0 ;
+			x[0][0] = Robot.Vx.full/1000.0 ;
+			x[1][0] = Robot.Vy.full/1000.0 ;
+			x[2][0] = Robot.Wr.full/1000.0 ;
+			x[3][0] = Robot.W0.full ;
+			x[4][0] = Robot.W1.full ;
+			x[5][0] = Robot.W2.full ;
+			x[6][0] = Robot.W3.full ;
+			
 			setpoint_generator() ;
 			state_feed_back() ;
 			Robot.W0_sp.full = u[0][0] /battery_voltage * max_ocr;
@@ -242,6 +255,7 @@ int main (void)
 		
 		if (data == packing_data)
 		{
+			free_wheel_function () ;	
 			tusmem = tus ;
 			data_packing () ;
 			packet_counter = 0 ;
@@ -265,7 +279,7 @@ int main (void)
 		
 		if (data == other_programs)
 		{
-			//free_wheel_function () ;			
+		
 		}
 		
 	}
@@ -321,18 +335,17 @@ void wireless_connection ( void )
 			LED_Red_PORT.OUTSET = LED_Red_PIN_bm;
 			
 			Robot.RID				= Buf_Rx_L[0];
-			//Robot.W0_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
-			//Robot.W0_sp.byte[low]	= Buf_Rx_L[2+ RobotID%3 * 10];
-			//Robot.W1_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
-			//Robot.W1_sp.byte[low]	= Buf_Rx_L[4+ RobotID%3 * 10];
-			//Robot.W2_sp.byte[high]  = Buf_Rx_L[5+ RobotID%3 * 10];
-			//Robot.W2_sp.byte[low]	= Buf_Rx_L[6+ RobotID%3 * 10];
-			//Robot.W3_sp.byte[high]  = Buf_Rx_L[7+ RobotID%3 * 10];
-			//Robot.W3_sp.byte[low]	= Buf_Rx_L[8+ RobotID%3 * 10];
-			//Robot.KCK				= Buf_Rx_L[9+ RobotID%3 * 10];
-			//Robot.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
+			Robot.Vx_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
+			Robot.Vx_sp.byte[low]	= Buf_Rx_L[2+ RobotID%3 * 10];
+			Robot.Vy_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
+			Robot.Vy_sp.byte[low]	= Buf_Rx_L[4+ RobotID%3 * 10];
+			Robot.Wr_sp.byte[high]  = Buf_Rx_L[5+ RobotID%3 * 10];
+			Robot.Wr_sp.byte[low]	= Buf_Rx_L[6+ RobotID%3 * 10];
+			Robot.alpha.byte[high]  = Buf_Rx_L[7+ RobotID%3 * 10];
+			Robot.alpha.byte[low]	= Buf_Rx_L[8+ RobotID%3 * 10];
+			Robot.KCK				= Buf_Rx_L[9+ RobotID%3 * 10];
+			Robot.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
 			Robot.ASK				= Buf_Rx_L[31];//0b00000000
-			
 			
 			if (Robot.ASK != Robot_Select)
 			{
@@ -401,14 +414,16 @@ void data_transmission (void)
 	//Robot.W0.full = a*1000000000.0 ;
 	//Robot.SB.full = sizeof(a) ;
 	HL show[16];
-	show[0].full = xd [0][0];
-	show[1].full = Robot.W0_sp.full;
+	show[0].full = xd[3][0];
+	show[1].full = x[3][0];
+	show[2].full = Robot.Vx_sp.full;
+	
 	Buf_Tx_L[0]  = show[0].byte[high];//Robot.W0.byte[high];
 	Buf_Tx_L[1]  = show[0].byte[low];//Robot.W0.byte[low];
 	Buf_Tx_L[2]  = show[1].byte[high];//Robot.SB.byte[high];
 	Buf_Tx_L[3]  = show[1].byte[low];//Robot.SB.byte[low];
-	Buf_Tx_L[4]  = number_of_sent_packet.byte[high] ;//Robot.W2.byte[high];
-	Buf_Tx_L[5]  = number_of_sent_packet.byte[low] ;//Robot.W2.byte[low];
+	Buf_Tx_L[4]  = show[2].byte[high];number_of_sent_packet.byte[high] ;//Robot.W2.byte[high];
+	Buf_Tx_L[5]  = show[2].byte[low];number_of_sent_packet.byte[low] ;//Robot.W2.byte[low];
 	Buf_Tx_L[6]  = number_of_received_packet.byte[high];//(Test_Data[4]>> 8) & 0xFF;	
 	Buf_Tx_L[7]  = number_of_received_packet.byte[low];//Test_Data[4] & 0xFF;			
 	
@@ -461,7 +476,7 @@ void data_packing ( void )
 	send_packet[0]  = 0b01010101 ;	//first start sign
 	send_packet[2]  = 0b01010101 ;	//second start sign
 	
-	send_packet[4] = ( ((Robot.W0_sp.byte[high]	    & 0x80) >> 7) |
+	send_packet[4] = (  ((Robot.W0_sp.byte[high]    & 0x80) >> 7) |
 						((Robot.W1_sp.byte[high]	& 0x80) >> 6) |
 						((Robot.W2_sp.byte[high]	& 0x80) >> 5) |
 						((Robot.W3_sp.byte[high]	& 0x80) >> 4) |
@@ -572,7 +587,7 @@ void data_unpacking (void)
 
 inline void free_wheel_function ( void )
 {
-	if (free_wheel)
+	if (free_wheel || (Robot.Vx_sp.full == 258 && Robot.Vy_sp.full == 772))
 	{
 		Robot.W0_sp.byte[high]		= 1;
 		Robot.W0_sp.byte[low ]		= 2;
