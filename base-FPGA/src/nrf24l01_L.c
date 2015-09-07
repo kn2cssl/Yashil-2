@@ -339,12 +339,12 @@ char *Address, char Address_Width, char Size_Payload, char Tx_Power) {
 	// Enable Enhanced ShockBurst
 	NRF24L01_L_Set_ShockBurst(_ShockBurst_OFF);
 	NRF24L01_L_WriteReg(W_REGISTER | EN_AA, 0x00);//01
-	NRF24L01_L_WriteReg(W_REGISTER | SETUP_RETR, 0x13);//2f
+	NRF24L01_L_WriteReg(W_REGISTER | SETUP_RETR, 0x13);//2f 
 	//NRF24L01_L_WriteReg(W_REGISTER | FEATURE, 0x02);  //
 	
 	// RF output power in TX mode = 0dBm (Max.)
 	// Set LNA gain
-	NRF24L01_L_WriteReg(W_REGISTER | RF_SETUP, 0b00000001 | Tx_Power | DataRate);////////////
+	NRF24L01_L_WriteReg(W_REGISTER | RF_SETUP, /*0b00000001 |*/ Tx_Power | DataRate);////////////
 
 	NRF24L01_L_Set_Address_Width(Address_Width);//////////////////////
 

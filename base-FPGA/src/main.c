@@ -132,6 +132,8 @@ float adc =0;
 int flg_dir=0, flg_chip=0, charge_flg=0,flg_sw=0,SW_TEST_flg=0;
 bool reset_setpoint_flag = true;
 
+int time1,time2;
+
 
 
 ////////////////////////////////////////current defines
@@ -180,7 +182,7 @@ int main (void)
 
 	change_ADC=6;
 	PORT_init();
-	//TimerD0_init();
+	TimerD0_init();
 	//TimerC0_init();
 	//TimerC1_init();
 	//TimerE0_init();
@@ -213,13 +215,14 @@ int main (void)
 		}
 		wireless_time_out ++ ;
 		
-		//================================================WIRELESS DATA
-		if (data == new_wireless_data)
-		{
-			wireless_connection();
-			data = new_controller_loop ;
-			wireless_time_out = 0 ;
-		}
+		//================================================WIRELESS DATA moved to interrupt forever!!!!
+// 			if (data == new_wireless_data)  
+// 			{
+// 				wireless_connection();
+// 				data = new_controller_loop;//communication;new_controller_loop ;
+// 				wireless_time_out = 0 ;
+// 				time1 = TCD0_CNT ;
+// 			}
 		_delay_us(1);
 		//-------------------------------------------------------------
 
@@ -244,18 +247,18 @@ int main (void)
 			x[5][0] = Robot.W2.full ;
 			x[6][0] = Robot.W3.full ;
 			
-			setpoint_generator() ;
-			state_feed_back() ;
-			Robot.W0_sp.full = u[0][0] /battery_voltage * max_ocr;
-			Robot.W1_sp.full = u[1][0] /battery_voltage * max_ocr;
-			Robot.W2_sp.full = u[2][0] /battery_voltage * max_ocr;
-			Robot.W3_sp.full = u[3][0] /battery_voltage * max_ocr;
+ 			setpoint_generator() ;
+ 			state_feed_back() ;
+ 			Robot.W0_sp.full = u[0][0] /battery_voltage * max_ocr;
+ 			Robot.W1_sp.full = u[1][0] /battery_voltage * max_ocr;
+ 			Robot.W2_sp.full = u[2][0] /battery_voltage * max_ocr;
+ 			Robot.W3_sp.full = u[3][0] /battery_voltage * max_ocr;
 			data = packing_data ;
 		}
 		
 		if (data == packing_data)
 		{
-			free_wheel_function () ;	
+			free_wheel_function () ; 
 			tusmem = tus ;
 			data_packing () ;
 			packet_counter = 0 ;
@@ -279,7 +282,9 @@ int main (void)
 		
 		if (data == other_programs)
 		{
-		
+			LED_Red_PORT.OUTCLR = LED_Red_PIN_bm;
+			LED_White_PORT.OUTCLR = LED_White_PIN_bm;
+			time2 = TCD0_CNT ;
 		}
 		
 	}
@@ -289,12 +294,11 @@ int main (void)
 
 ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt Pin
 {
-	//if (wireless_ok)
-	//{
-		//data = new_wireless_data ;
-	//}
 	
-	data = new_wireless_data ;
+	wireless_connection();
+	data = new_controller_loop;//communication;new_controller_loop ;
+	wireless_time_out = 0 ;
+	time1 = TCD0_CNT ;
 	
 }
 
@@ -333,7 +337,6 @@ void wireless_connection ( void )
 		if((Buf_Rx_L[0] == 0x0A && (RobotID < 3 || (RobotID<9 && RobotID>5)))|| (Buf_Rx_L[0] == 0xA0 && (RobotID > 8 || (RobotID<6 &&      RobotID>2))))
 		{
 			LED_Red_PORT.OUTSET = LED_Red_PIN_bm;
-			
 			Robot.RID				= Buf_Rx_L[0];
 			Robot.Vx_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
 			Robot.Vx_sp.byte[low]	= Buf_Rx_L[2+ RobotID%3 * 10];
@@ -414,7 +417,11 @@ void data_transmission (void)
 	//Robot.W0.full = a*1000000000.0 ;
 	//Robot.SB.full = sizeof(a) ;
 	HL show[16];
-	show[0].full = xd[3][0];
+	if (time2 > time1)
+	{
+		show[0].full = time2-time1;xd[3][0];
+	}
+	
 	show[1].full = x[3][0];
 	show[2].full = Robot.Vx_sp.full;
 	
