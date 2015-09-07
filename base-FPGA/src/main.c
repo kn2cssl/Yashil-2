@@ -176,7 +176,7 @@ int parity_calc(signed int data);
 int main (void)
 {
 	En_RC32M();
-
+	Address[4] = (RobotID << 4 ) | RobotID ;
 	//Enable LowLevel & HighLevel Interrupts
 	PMIC_CTRL |= PMIC_HILVLEN_bm | PMIC_LOLVLEN_bm |PMIC_MEDLVLEN_bm;
 
@@ -334,7 +334,7 @@ void wireless_connection ( void )
 		//1) read payload through SPI,
 		NRF24L01_L_Read_RX_Buf(Buf_Rx_L, _Buffer_Size);
 		free_wheel=0 ;
-		if((Buf_Rx_L[0] == 0x0A && (RobotID < 3 || (RobotID<9 && RobotID>5)))|| (Buf_Rx_L[0] == 0xA0 && (RobotID > 8 || (RobotID<6 &&      RobotID>2))))
+		if(Buf_Rx_L[0] == RobotID )
 		{
 			LED_Red_PORT.OUTSET = LED_Red_PIN_bm;
 			Robot.RID				= Buf_Rx_L[0];
@@ -350,23 +350,9 @@ void wireless_connection ( void )
 			Robot.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
 			Robot.ASK				= Buf_Rx_L[31];//0b00000000
 			
-			if (Robot.ASK != Robot_Select)
-			{
-				Robot_Select = Robot.ASK;
-				if (Robot_Select == RobotID)
-				{
-					NRF24L01_L_WriteReg(W_REGISTER | EN_AA, 0x01);
-				}
-				else
-				{
-					NRF24L01_L_WriteReg(W_REGISTER | EN_AA, 0x00);
-				}
-			}
 			
-			if (Robot.ASK == RobotID)
-			{
 				data_transmission();
-			}
+
 
 		}
 	}
