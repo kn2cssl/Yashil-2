@@ -68,6 +68,7 @@ struct Robot_Data
 	HL alpha ;
 	uint8_t KCK;
 	uint8_t CHP;
+	uint8_t free_wheel ;
 	uint8_t ASK;
 	
 	//gyro data
@@ -249,10 +250,10 @@ int main (void)
 			
  			setpoint_generator() ;
  			state_feed_back() ;
- 			Robot.W0_sp.full = u[0][0] /battery_voltage * max_ocr;
- 			Robot.W1_sp.full = u[1][0] /battery_voltage * max_ocr;
- 			Robot.W2_sp.full = u[2][0] /battery_voltage * max_ocr;
- 			Robot.W3_sp.full = u[3][0] /battery_voltage * max_ocr;
+ 			Robot.W0_sp.full = Robot.Vx_sp.full;u[0][0] /battery_voltage * max_ocr;
+ 			Robot.W1_sp.full = Robot.Vy_sp.full;u[1][0] /battery_voltage * max_ocr;
+ 			Robot.W2_sp.full = Robot.Wr_sp.full;u[2][0] /battery_voltage * max_ocr;
+ 			Robot.W3_sp.full = Robot.alpha.full;u[3][0] /battery_voltage * max_ocr;
 			data = packing_data ;
 		}
 		
@@ -338,20 +339,19 @@ void wireless_connection ( void )
 		{
 			LED_Red_PORT.OUTSET = LED_Red_PIN_bm;
 			Robot.RID				= Buf_Rx_L[0];
-			Robot.Vx_sp.byte[high]  = Buf_Rx_L[1+ RobotID%3 * 10];
-			Robot.Vx_sp.byte[low]	= Buf_Rx_L[2+ RobotID%3 * 10];
-			Robot.Vy_sp.byte[high]  = Buf_Rx_L[3+ RobotID%3 * 10];
-			Robot.Vy_sp.byte[low]	= Buf_Rx_L[4+ RobotID%3 * 10];
-			Robot.Wr_sp.byte[high]  = Buf_Rx_L[5+ RobotID%3 * 10];
-			Robot.Wr_sp.byte[low]	= Buf_Rx_L[6+ RobotID%3 * 10];
-			Robot.alpha.byte[high]  = Buf_Rx_L[7+ RobotID%3 * 10];
-			Robot.alpha.byte[low]	= Buf_Rx_L[8+ RobotID%3 * 10];
-			Robot.KCK				= Buf_Rx_L[9+ RobotID%3 * 10];
-			Robot.CHP				= Buf_Rx_L[10+RobotID%3 * 10];
+			Robot.Vx_sp.byte[high]  = Buf_Rx_L[1];
+			Robot.Vx_sp.byte[low]	= Buf_Rx_L[2];
+			Robot.Vy_sp.byte[high]  = Buf_Rx_L[3];
+			Robot.Vy_sp.byte[low]	= Buf_Rx_L[4];
+			Robot.Wr_sp.byte[high]  = Buf_Rx_L[5];
+			Robot.Wr_sp.byte[low]	= Buf_Rx_L[6];
+			Robot.alpha.byte[high]  = Buf_Rx_L[7];
+			Robot.alpha.byte[low]	= Buf_Rx_L[8];
+			Robot.KCK				= Buf_Rx_L[9];
+			Robot.CHP				= Buf_Rx_L[10];
 			Robot.ASK				= Buf_Rx_L[31];//0b00000000
 			
-			
-				data_transmission();
+			data_transmission();
 
 
 		}
@@ -408,7 +408,7 @@ void data_transmission (void)
 		show[0].full = time2-time1;xd[3][0];
 	}
 	
-	show[1].full = x[3][0];
+	show[1].full = Robot.W0.full;
 	show[2].full = Robot.Vx_sp.full;
 	
 	Buf_Tx_L[0]  = show[0].byte[high];//Robot.W0.byte[high];
@@ -454,10 +454,10 @@ void data_packing ( void )
 	HL MAKsumA	;
 	HL MAKsumB	;
 	
-	//Robot.W0_sp.full = 4090;//test !!!!!!!!!!!!!!!!!!!!!!!!!
-	//Robot.W1_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
-	//Robot.W2_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!! 
-	//Robot.W3_sp.full = 0x0000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
+	//Robot.W0_sp.full = 1000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
+	//Robot.W1_sp.full = 1000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
+	//Robot.W2_sp.full = 1000;//test !!!!!!!!!!!!!!!!!!!!!!!!! 
+	//Robot.W3_sp.full = 1000;//test !!!!!!!!!!!!!!!!!!!!!!!!!
 	
 	MAKsumA.full = Robot.W0_sp.byte[high] + Robot.W1_sp.byte[high] + Robot.W2_sp.byte[high] + Robot.W3_sp.byte[high] + Robot.SB_sp.byte[high]
 				 + Robot.W0_sp.byte[low ] + Robot.W1_sp.byte[low ] + Robot.W2_sp.byte[low ] + Robot.W3_sp.byte[low ] + Robot.SB_sp.byte[low ]	;
