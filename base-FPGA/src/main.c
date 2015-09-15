@@ -12,6 +12,7 @@
 #include "nrf24l01_L.h"
 #include <stdlib.h>
 #include "controller.h"
+#include <stdio.h>
 
 #define high 1
 #define	low	 0	
@@ -41,6 +42,8 @@ void wireless_connection ( void ) ;
 void data_packing ( void ) ;
 void data_unpacking ( void ) ;
 void free_wheel_function ( void ) ;
+void Timer_on (void) ;
+void Timer_show (void) ;
 
 
 //================================
@@ -51,7 +54,7 @@ enum Data_Flow data;
 typedef union High_Low{
 	uint8_t byte[2] ;
 	int16_t full ;
-	} HL;
+} HL;
 
 struct Robot_Data
 {
@@ -104,6 +107,7 @@ struct Robot_Data
 	
 }Robot;
 
+uint16_t timer ;
 uint8_t send_packet[40];
 uint8_t receive_packet [40];
 uint8_t d_check [2];
@@ -187,7 +191,7 @@ int main (void)
 	//TimerC0_init();
 	//TimerC1_init();
 	//TimerE0_init();
-	//TimerE1_init();
+	TimerE1_init();
 	//USARTE0_init();
 	//ADCA_init();
 	//ADCB_init();
@@ -204,6 +208,7 @@ int main (void)
 	
 	sei();
 	
+	// complete run time : 23102 clk
 	while(1)
 	{
 
@@ -235,8 +240,12 @@ int main (void)
 		//_delay_us(1);
 		//-------------------------------------------------------------
 
+		// run time : about 19115 clk
 		if (data == new_controller_loop)
 		{
+			time1 = TCD0_CNT ;
+			Timer_show();
+			Timer_on();
 			Vx = Robot.Vx_sp.full / 1000.0 ;
 			Vy = Robot.Vy_sp.full / 1000.0 ;
 			Wr = Robot.Wr_sp.full / 1000.0 ;
@@ -249,14 +258,18 @@ int main (void)
 			x[6][0] = Robot.W3.full ;
 			
  			setpoint_generator() ;
+			 
  			state_feed_back() ;
+			
  			Robot.W0_sp.full = Robot.Vx_sp.full;u[0][0] /battery_voltage * max_ocr;
  			Robot.W1_sp.full = Robot.Vy_sp.full;u[1][0] /battery_voltage * max_ocr;
  			Robot.W2_sp.full = Robot.Wr_sp.full;u[2][0] /battery_voltage * max_ocr;
  			Robot.W3_sp.full = Robot.alpha.full;u[3][0] /battery_voltage * max_ocr;
 			data = packing_data ;
+			
 		}
 		
+		//run time : 536 clk
 		if (data == packing_data)
 		{
 			free_wheel_function () ; 
@@ -267,6 +280,7 @@ int main (void)
 			data = communication ;
 		}
 		
+		//run time : 84 clk
 		if (data == communication)
 		{
 			fpga_connection () ;
@@ -274,6 +288,7 @@ int main (void)
 			summer += packet_counter;
 		}
 		
+		// run time : 425 clk
 		if (data == unpacking_data)
 		{
 			data_unpacking () ;
@@ -281,6 +296,7 @@ int main (void)
 			tusviwe = tus - tusmem ;
 		}
 		
+		// run time : 2 clk
 		if (data == other_programs)
 		{
 			LED_Red_PORT.OUTCLR = LED_Red_PIN_bm;
@@ -299,33 +315,14 @@ ISR(PORTD_INT0_vect)////////////////////////////////////////PTX   IRQ Interrupt 
 	wireless_connection();
 	data = new_controller_loop;//communication;new_controller_loop ;
 	wireless_time_out = 0 ;
-	time1 = TCD0_CNT ;
 	
 }
 
 
-ISR(TCE1_OVF_vect)//0.1s
-{
-	counter_100ms++;
-	if (counter_100ms==1)
-	{
-		//tc_disable(&TCE1);
-		//rate = rate_counter;
-		//wireless_ok=true;
-		//NRF_init () ;
-		counter_1s ++;
-		counter_100ms=0;
-	}
-}
-
-ISR(TCE0_OVF_vect)//0.1s
-{
-	tus++;
-}
-
 
 void wireless_connection ( void )
 {
+	
 	uint8_t status_L = NRF24L01_L_WriteReg(W_REGISTER | STATUSe, _TX_DS|_MAX_RT|_RX_DR);
 	if((status_L & _RX_DR) == _RX_DR)
 	{
@@ -350,12 +347,11 @@ void wireless_connection ( void )
 			Robot.KCK				= Buf_Rx_L[9];
 			Robot.CHP				= Buf_Rx_L[10];
 			Robot.ASK				= Buf_Rx_L[31];//0b00000000
-			
 			data_transmission();
-
-
 		}
+		
 	}
+	
 	
 	if ((status_L&_MAX_RT) == _MAX_RT)
 	{
@@ -389,7 +385,7 @@ void NRF_init (void)
 	_delay_us(130);
 }
 
-
+// run time : 2276 clk
 void data_transmission (void)
 {
 	//transmitting data to wireless board/////////////////////////////////////////////////
@@ -408,7 +404,7 @@ void data_transmission (void)
 		show[0].full = time2-time1;xd[3][0];
 	}
 	
-	show[1].full = Robot.W0.full;
+	show[1].full = timer;Robot.W0.full;
 	show[2].full = Robot.Vx_sp.full;
 	
 	Buf_Tx_L[0]  = show[0].byte[high];//Robot.W0.byte[high];
@@ -448,7 +444,7 @@ void data_transmission (void)
 	//NRF24L01_L_RF_TX();
 }
 
-
+// run time : 457 clk
 void data_packing ( void )
 {
 	HL MAKsumA	;
@@ -502,7 +498,7 @@ void data_packing ( void )
 	send_packet[34] = MAKsumB.byte[low]			    & 0b01111111 ;
 }
 
-
+// run time : 60 clk
 void fpga_connection ( void )
 {
 	if (packet_counter % 2 == 0)//sending
@@ -534,6 +530,7 @@ void fpga_connection ( void )
 }
 
 
+// run time : 386 clk
 void data_unpacking (void)
 {
 	//unpacking data from FPGA
@@ -591,4 +588,17 @@ inline void free_wheel_function ( void )
 		Robot.W3_sp.byte[high]		= 0;
 		Robot.W3_sp.byte[low ]		= 0;
 	}
+}
+
+//starting counter
+void Timer_on(void)
+{
+	TCE1_CNT = 0 ;
+}
+
+//stopping counter and showing time through USART
+//running time : about 26400 clk
+void Timer_show (void)
+{
+	timer = TCE1_CNT - 17; // 17 clk is for excessive clk counted
 }

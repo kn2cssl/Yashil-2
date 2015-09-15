@@ -94,15 +94,13 @@ void TimerC1_init(void) // KICK_CHIP -> OC1A (PORTC4)
 	tc_enable(&TCC1);
 	//tc_write_cc(&TCC1,TC_CCA,0x5D);
 }
-#define TIMERE1_PER 0xC35 // per=0xD7,DIV256 => 1.728ms  // per=0x140,DIV1 => 10us
 void TimerE1_init(void)
 {
-    tc_write_clock_source(&TCE1,TC_CLKSEL_DIV1024_gc);
-    tc_set_wgm(&TCE1,TC_WG_NORMAL);
-    tc_set_overflow_interrupt_level(&TCE1,TC_INT_LVL_MED);
-    tc_write_period(&TCE1,TIMERE1_PER);
-    tc_set_direction(&TCE1,TC_UP);
-    tc_enable(&TCE1);
+	tc_write_clock_source(&TCE1,TC_CLKSEL_DIV1024_gc);
+	tc_set_wgm(&TCE1,TC_WG_NORMAL);
+	tc_write_period(&TCE1,0xffff);
+	tc_set_direction(&TCE1,TC_UP);
+	tc_enable(&TCE1);
 };
 #define TIMERE0_PER 0x0020
 void TimerE0_init(void)

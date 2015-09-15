@@ -60,8 +60,10 @@
 
 #define landa 0.99999
 
+//run time : 4694 clk 
 void setpoint_generator ( void ) ;
 
+//run time : 12407 clk
 void state_feed_back ( void ) ;
 
 void kalman_observer ( void ) ;
