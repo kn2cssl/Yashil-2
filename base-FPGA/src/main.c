@@ -212,7 +212,7 @@ int main (void)
 	while(1)
 	{
 
-		if (wireless_time_out > 3000)
+		if (wireless_time_out > 32000)
 		{
 			NRF_init () ;
 			free_wheel = 1 ;
